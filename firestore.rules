@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Bus stops - public read, admin write
+    match /stops/{stopId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Add admin check in production
+    }
+    
+    // Buses - public read, admin write
+    match /buses/{busId} {
+      allow read: if true;
+      allow write: if request.auth != null; // Add admin check in production
+    }
+    
+    // Favorites - user-specific
+    match /favorites/{favoriteId} {
+      allow read: if true; // In production, check request.auth.uid
+      allow create: if true;
+      allow delete: if true;
+    }
+    
+    // Feedback - public create, admin read/update
+    match /feedback/{feedbackId} {
+      allow create: if true;
+      allow read: if request.auth != null; // Admin only in production
+      allow update: if request.auth != null; // Admin only in production
+    }
+  }
+}
