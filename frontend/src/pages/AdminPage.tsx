@@ -20,16 +20,37 @@ const AdminPage = () => {
 
   const handleAddBus = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const busData = {
+      ...busForm,
+      route: busForm.route.split(',').map(s => s.trim()),
+    };
+    
+    console.log('Attempting to add bus with data:', busData);
+    console.log('API base URL:', api.defaults.baseURL);
+    
     try {
-      await api.post('/admin/buses', {
-        ...busForm,
-        route: busForm.route.split(',').map(s => s.trim()),
-      });
+      const response = await api.post('/admin/buses', busData);
+      console.log('✅ Bus added successfully:', response.data);
       toast.success('Bus added successfully!');
       setBusForm({ busNumber: '', busName: '', type: 'KSRTC', route: '' });
-    } catch (error) {
-      console.error('Error adding bus:', error);
-      toast.error('Failed to add bus');
+    } catch (error: any) {
+      console.error('❌ Error adding bus:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response,
+        request: error.request,
+        config: error.config
+      });
+      
+      if (error.code === 'ERR_NETWORK') {
+        toast.error('Network Error: Cannot connect to backend server');
+      } else if (error.response) {
+        const errorMessage = error.response?.data?.error || `Server error: ${error.response.status}`;
+        toast.error(errorMessage);
+      } else {
+        toast.error(error.message || 'Failed to add bus');
+      }
     }
   };
 

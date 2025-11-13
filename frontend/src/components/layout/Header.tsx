@@ -1,9 +1,25 @@
-import { Link } from 'react-router-dom';
-import { Bus, Heart, Info, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bus, Heart, Info, LayoutDashboard, Menu, X, LogIn, LogOut, User } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import LoginModal from '../LoginModal';
+import toast from 'react-hot-toast';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const { currentUser, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Logged out successfully');
+      navigate('/');
+    } catch (error) {
+      toast.error('Failed to logout');
+    }
+  };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -42,13 +58,44 @@ const Header = () => {
               <Info className="h-4 w-4" />
               <span>About</span>
             </Link>
-            <Link
-              to="/admin"
-              className="flex items-center space-x-1 bg-accent-500 text-white px-4 py-2 rounded-lg hover:bg-accent-600 font-medium transition-colors"
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Admin</span>
-            </Link>
+            
+            {/* Show Admin link only for admin users */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center space-x-1 bg-accent-500 text-white px-4 py-2 rounded-lg hover:bg-accent-600 font-medium transition-colors"
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Admin</span>
+              </Link>
+            )}
+
+            {/* Auth buttons */}
+            {currentUser ? (
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 text-gray-700">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {currentUser.email?.split('@')[0]}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center space-x-1 text-red-600 hover:text-red-700 font-medium transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setLoginModalOpen(true)}
+                className="flex items-center space-x-1 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 font-medium transition-colors"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Login</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -86,16 +133,56 @@ const Header = () => {
               <Info className="h-4 w-4" />
               <span>About</span>
             </Link>
-            <Link
-              to="/admin"
-              className="flex items-center space-x-2 px-4 py-2 bg-accent-500 text-white hover:bg-accent-600 rounded-lg transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Admin Panel</span>
-            </Link>
+
+            {/* Admin link for admin users only */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="flex items-center space-x-2 px-4 py-2 bg-accent-500 text-white hover:bg-accent-600 rounded-lg transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Admin Panel</span>
+              </Link>
+            )}
+
+            {/* Auth buttons */}
+            {currentUser ? (
+              <>
+                <div className="flex items-center space-x-2 px-4 py-2 text-gray-700">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {currentUser.email?.split('@')[0]}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors w-full"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Logout</span>
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => {
+                  setLoginModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded-lg transition-colors w-full"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Login</span>
+              </button>
+            )}
           </div>
         )}
+
+        {/* Login Modal */}
+        <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
       </nav>
     </header>
   );

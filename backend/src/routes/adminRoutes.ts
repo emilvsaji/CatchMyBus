@@ -6,9 +6,12 @@ const router = Router();
 // Add new bus
 router.post('/buses', async (req: Request, res: Response) => {
   try {
+    console.log('📝 Received bus data:', req.body);
+    
     const { busNumber, busName, type, route } = req.body;
 
     if (!busNumber || !busName || !type || !route) {
+      console.error('❌ Missing required fields');
       return res.status(400).json({ error: 'All fields are required' });
     }
 
@@ -21,7 +24,9 @@ router.post('/buses', async (req: Request, res: Response) => {
       createdAt: new Date(),
     };
 
+    console.log('💾 Attempting to save bus to Firestore:', busData);
     const docRef = await db.collection('buses').add(busData);
+    console.log('✅ Bus saved successfully with ID:', docRef.id);
 
     res.status(201).json({
       success: true,
@@ -29,8 +34,12 @@ router.post('/buses', async (req: Request, res: Response) => {
       message: 'Bus added successfully',
     });
   } catch (error) {
-    console.error('Error adding bus:', error);
-    res.status(500).json({ error: 'Failed to add bus' });
+    console.error('❌ Error adding bus:', error);
+    console.error('Error details:', error);
+    res.status(500).json({ 
+      error: 'Failed to add bus',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
