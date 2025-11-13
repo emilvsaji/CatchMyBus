@@ -18,7 +18,8 @@ router.get('/search', async (req: Request, res: Response) => {
     const results: any[] = [];
 
     busesSnapshot.forEach((doc) => {
-      const bus = { id: doc.id, ...doc.data() };
+      const busData = doc.data();
+      const bus: any = { id: doc.id, ...busData };
       
       // Check if bus type filter is applied
       if (type && type !== 'all' && bus.type !== type) {
