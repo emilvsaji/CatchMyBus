@@ -43,3 +43,6 @@ firestore-debug.log
 # OS
 .DS_Store
 Thumbs.db
+/frontend/env (1)
+/backend/env
+/backend/node_modules

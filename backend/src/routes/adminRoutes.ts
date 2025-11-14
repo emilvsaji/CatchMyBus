@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../config/firebase';
+// (Google Directions import removed)
 
 const router = Router();
 
@@ -132,3 +133,16 @@ router.get('/buses', async (req: Request, res: Response) => {
 });
 
 export default router;
+
+// Debug: list first N buses (id + route) to inspect stored values
+router.get('/debug/buses', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt((req.query.limit as string) || '10', 10);
+    const snapshot = await db.collection('buses').limit(limit).get();
+    const items = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+    res.json({ success: true, count: items.length, data: items });
+  } catch (error) {
+    console.error('Error in /admin/debug/buses:', error);
+    res.status(500).json({ error: 'Failed to fetch debug buses', details: error instanceof Error ? error.message : error });
+  }
+});

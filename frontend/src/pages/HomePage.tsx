@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Navigation, Clock, Star } from 'lucide-react';
+import { Search, MapPin, Navigation, Clock, Star, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../config/api';
+import { BusResult } from '../types';
+import BusCard from '../components/BusCard';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -10,10 +13,26 @@ const HomePage = () => {
     to: '',
     busType: 'all',
   });
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [results, setResults] = useState<BusResult[]>([]);
+
+  const fetchBusResults = async (from: string, to: string, type: string) => {
+    try {
+      setLoadingResults(true);
+      const resp = await api.get('/buses/search', { params: { from, to, type } });
+      setResults(resp.data.data || []);
+    } catch (err) {
+      console.error('Error fetching bus results from HomePage:', err);
+      toast.error('Failed to fetch bus results');
+      setResults([]);
+    } finally {
+      setLoadingResults(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.from || !formData.to) {
       toast.error('Please select both origin and destination');
       return;
@@ -24,8 +43,8 @@ const HomePage = () => {
       return;
     }
 
-    // Navigate to search results with query params
-    navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}`);
+    // Perform inline search and show results on Home
+    fetchBusResults(formData.from, formData.to, formData.busType || 'all');
   };
 
   return (
@@ -107,6 +126,31 @@ const HomePage = () => {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Inline Results (when searched) */}
+      <div className="max-w-3xl mx-auto mb-16 animate-slide-up">
+        {loadingResults ? (
+          <div className="card text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Searching for buses...</p>
+          </div>
+        ) : results.length === 0 ? null : (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold">Search Results</h2>
+              <button onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}`)} className="text-sm text-primary-600 hover:underline">
+                View full results
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {results.map((r, i) => (
+                <BusCard key={i} result={r} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Features Section */}
