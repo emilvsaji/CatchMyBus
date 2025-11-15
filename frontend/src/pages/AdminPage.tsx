@@ -381,11 +381,11 @@ const AdminPage = () => {
                           placeholder="HH:MM"
                           value={stopTiming.arrivalTime}
                           onChange={(e) => {
-                            const value = e.target.value;
-                            // Allow only numbers and colon
-                            if (/^[0-9:]*$/.test(value)) {
-                              updateStopTiming(index, 'arrivalTime', value);
+                            let value = e.target.value.replace(/[^0-9]/g, '');
+                            if (value.length >= 2) {
+                              value = value.slice(0, 2) + ':' + value.slice(2, 4);
                             }
+                            updateStopTiming(index, 'arrivalTime', value);
                           }}
                           maxLength={5}
                           required
@@ -555,10 +555,11 @@ const AdminPage = () => {
                               placeholder="HH:MM"
                               value={stopTiming.arrivalTime}
                               onChange={(e) => {
-                                const value = e.target.value;
-                                if (/^[0-9:]*$/.test(value)) {
-                                  updateStopTiming(index, 'arrivalTime', value);
+                                let value = e.target.value.replace(/[^0-9]/g, '');
+                                if (value.length >= 2) {
+                                  value = value.slice(0, 2) + ':' + value.slice(2, 4);
                                 }
+                                updateStopTiming(index, 'arrivalTime', value);
                               }}
                               maxLength={5}
                               required
