@@ -19,7 +19,7 @@ export default function DebugPage() {
       const healthData = await healthResponse.json();
       
       // Test 2: API endpoint
-      const apiResponse = await api.get('/buses/search?from=test&to=test');
+      const apiResponse = await api.get('/api/buses/search?from=test&to=test');
       
       setResult({
         success: true,

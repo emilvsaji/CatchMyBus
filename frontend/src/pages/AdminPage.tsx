@@ -199,7 +199,7 @@ const AdminPage = () => {
     console.log('API base URL:', api.defaults.baseURL);
     
     try {
-      const response = await api.post('/admin/buses', busData);
+      const response = await api.post('/api/admin/buses', busData);
       console.log('✅ Bus added successfully:', response.data);
       toast.success('Bus added successfully!');
       setBusForm({ busName: '', from: '', via: '', to: '', type: 'KSRTC' });

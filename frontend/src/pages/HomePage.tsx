@@ -19,7 +19,7 @@ const HomePage = () => {
   const fetchBusResults = async (from: string, to: string, type: string) => {
     try {
       setLoadingResults(true);
-      const resp = await api.get('/buses/search', { params: { from, to, type } });
+      const resp = await api.get('/api/buses/search', { params: { from, to, type } });
       setResults(resp.data.data || []);
     } catch (err) {
       console.error('Error fetching bus results from HomePage:', err);

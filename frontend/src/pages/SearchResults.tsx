@@ -26,7 +26,7 @@ const SearchResults = () => {
   const fetchBusResults = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/buses/search', {
+      const response = await api.get('/api/buses/search', {
         params: { from, to, type },
       });
       setResults(response.data.data || []);
@@ -40,7 +40,7 @@ const SearchResults = () => {
 
   const handleSaveFavorite = async () => {
     try {
-      await api.post('/favorites', { fromStop: from, toStop: to });
+      await api.post('/api/favorites', { fromStop: from, toStop: to });
       toast.success('Route saved to favorites!');
     } catch (error) {
       console.error('Error saving favorite:', error);
