@@ -106,7 +106,7 @@ const AdminPage = () => {
     };
     
     try {
-      await api.put(`/api/admin/buses/${editingBus.id}`, busData);
+      await api.put(`/admin/buses/${editingBus.id}`, busData);
       toast.success('Bus updated successfully!');
       setEditingBus(null);
       setBusForm({ busName: '', from: '', via: '', to: '', type: 'KSRTC' });
@@ -124,7 +124,7 @@ const AdminPage = () => {
     }
     
     try {
-      await api.delete(`/api/admin/buses/${busId}`);
+      await api.delete(`/admin/buses/${busId}`);
       toast.success('Bus deleted successfully!');
       fetchAllBuses();
     } catch (error) {
