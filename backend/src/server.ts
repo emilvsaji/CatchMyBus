@@ -13,8 +13,8 @@ const PORT = process.env.PORT || 5000;
 
 // CORS Configuration - MUST be FIRST middleware
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+  origin: process.env.FRONTEND_URL 
+    ? process.env.FRONTEND_URL.split(',').map(o => o.trim())
     : ['http://localhost:5173', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   console.log('Origin:', req.headers.origin);
-  console.log('CORS_ORIGIN env:', process.env.CORS_ORIGIN);
+  console.log('FRONTEND_URL env:', process.env.FRONTEND_URL);
   next();
 });
 
