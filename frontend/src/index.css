@@ -38,3 +38,101 @@
   height: 100%;
   width: 100%;
 }
+
+/* Fallback bus animation (no WebGL) */
+.bus-fallback-wrapper {
+  width: 100%;
+  padding: 6px 0;
+}
+.bus-fallback-track {
+  position: relative;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #e5e7eb, #d1d5db);
+  overflow: hidden;
+}
+.bus-fallback-icon {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  animation: busMoveX 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+}
+
+@keyframes busMoveX {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(calc(100% - 24px)); }
+  100% { transform: translateX(0); }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .animate-bus-move {
+    animation: busMove 3s ease-in-out infinite;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes busMove {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(30px); }
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .animate-bus-move {
+    animation: busMove 3s ease-in-out infinite;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes busMove {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(30px);
+    }
+  }
+}

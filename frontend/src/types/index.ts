@@ -71,4 +71,5 @@ export interface BusResult {
   distance: number;
   estimatedTime: number;
   fare: number;
+  partial?: boolean; // Flag for partial matches
 }

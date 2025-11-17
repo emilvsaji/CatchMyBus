@@ -19,7 +19,8 @@
     "date-fns": "^3.0.0",
     "react-hot-toast": "^2.4.1",
     "leaflet": "^1.9.4",
-    "react-leaflet": "^4.2.1"
+    "react-leaflet": "^4.2.1",
+    "three": "^0.159.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
