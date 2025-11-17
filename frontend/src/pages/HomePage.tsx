@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Navigation, Clock, Star, ArrowLeft } from 'lucide-react';
+import { Search, MapPin, Navigation, Clock, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
 import { BusResult } from '../types';
@@ -145,9 +145,17 @@ const HomePage = () => {
             </div>
 
             <div className="space-y-4">
-              {results.map((r, i) => (
-                <BusCard key={i} result={r} />
+              {results.slice(0, 3).map((r, i) => (
+                <BusCard key={i} result={r} compact={true} />
               ))}
+              {results.length > 3 && (
+                <button 
+                  onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}`)}
+                  className="w-full btn-secondary py-3"
+                >
+                  View All {results.length} Results →
+                </button>
+              )}
             </div>
           </div>
         )}

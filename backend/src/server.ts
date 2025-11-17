@@ -11,9 +11,22 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
+// Configure CORS origins from environment (FRONTEND_URL in backend/.env)
+// FRONTEND_URL may contain a single URL or a comma-separated list of allowed frontends.
+const frontendEnv = process.env.FRONTEND_URL || 'http://localhost:5173';
+const frontendOrigins = frontendEnv.split(',').map((s) => s.trim()).filter(Boolean);
+const devOrigins = ['http://localhost:3000'];
+const allowedOrigins = Array.from(new Set([...frontendOrigins, ...devOrigins]));
+console.log('CORS allowed origins:', allowedOrigins);
+
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like curl, mobile apps, or same-origin)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json());
