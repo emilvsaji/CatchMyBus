@@ -11,30 +11,40 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-// Configure CORS origins from environment (FRONTEND_URL in backend/.env)
-// FRONTEND_URL may contain a single URL or a comma-separated list of allowed frontends.
+// Build allowed origins from environment, with sensible defaults for local dev
 const frontendEnv = process.env.FRONTEND_URL || 'http://localhost:5173';
 const frontendOrigins = frontendEnv.split(',').map((s) => s.trim()).filter(Boolean);
 const devOrigins = ['http://localhost:3000'];
 const allowedOrigins = Array.from(new Set([...frontendOrigins, ...devOrigins]));
 console.log('CORS allowed origins:', allowedOrigins);
 
-// Middleware
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like curl, mobile apps, or same-origin)
-    if (!origin) return callback(null, true);
+// CORS options (use a callback to allow requests with no origin)
+const corsOptions = {
+  origin: (origin: any, callback: any) => {
+    if (!origin) return callback(null, true); // allow curl, mobile apps, same-origin
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-}));
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests for all routes
+app.options('*', cors(corsOptions));
+
+// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log('Origin:', req.headers.origin);
+  console.log('FRONTEND_URL env:', process.env.FRONTEND_URL);
   next();
 });
 

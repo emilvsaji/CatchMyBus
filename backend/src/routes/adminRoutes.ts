@@ -132,8 +132,6 @@ router.get('/buses', async (req: Request, res: Response) => {
   }
 });
 
-export default router;
-
 // Debug: list first N buses (id + route) to inspect stored values
 router.get('/debug/buses', async (req: Request, res: Response) => {
   try {
@@ -146,3 +144,5 @@ router.get('/debug/buses', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch debug buses', details: error instanceof Error ? error.message : error });
   }
 });
+
+export default router;

@@ -17,7 +17,7 @@ const FavoritesPage = () => {
   const fetchFavorites = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/favorites');
+      const response = await api.get('/api/favorites');
       setFavorites(response.data.data || []);
     } catch (error) {
       console.error('Error fetching favorites:', error);
@@ -29,7 +29,7 @@ const FavoritesPage = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/favorites/${id}`);
+      await api.delete(`/api/favorites/${id}`);
       setFavorites(favorites.filter((f) => f.id !== id));
       toast.success('Favorite removed');
     } catch (error) {

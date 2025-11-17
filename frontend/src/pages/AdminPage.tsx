@@ -48,7 +48,7 @@ const AdminPage = () => {
   const fetchAllBuses = async () => {
     setIsLoadingBuses(true);
     try {
-      const response = await api.get('/admin/buses');
+      const response = await api.get('/api/admin/buses');
       setAllBuses(response.data.data || []);
     } catch (error) {
       console.error('Error fetching buses:', error);
@@ -106,7 +106,7 @@ const AdminPage = () => {
     };
     
     try {
-      await api.put(`/admin/buses/${editingBus.id}`, busData);
+      await api.put(`/api/admin/buses/${editingBus.id}`, busData);
       toast.success('Bus updated successfully!');
       setEditingBus(null);
       setBusForm({ busName: '', from: '', via: '', to: '', type: 'KSRTC' });
@@ -124,7 +124,7 @@ const AdminPage = () => {
     }
     
     try {
-      await api.delete(`/admin/buses/${busId}`);
+      await api.delete(`/api/admin/buses/${busId}`);
       toast.success('Bus deleted successfully!');
       fetchAllBuses();
     } catch (error) {
@@ -199,7 +199,7 @@ const AdminPage = () => {
     console.log('API base URL:', api.defaults.baseURL);
     
     try {
-      const response = await api.post('/admin/buses', busData);
+      const response = await api.post('/api/admin/buses', busData);
       console.log('✅ Bus added successfully:', response.data);
       toast.success('Bus added successfully!');
       setBusForm({ busName: '', from: '', via: '', to: '', type: 'KSRTC' });
@@ -381,11 +381,11 @@ const AdminPage = () => {
                           placeholder="HH:MM"
                           value={stopTiming.arrivalTime}
                           onChange={(e) => {
-                            const value = e.target.value;
-                            // Allow only numbers and colon
-                            if (/^[0-9:]*$/.test(value)) {
-                              updateStopTiming(index, 'arrivalTime', value);
+                            let value = e.target.value.replace(/[^0-9]/g, '');
+                            if (value.length >= 2) {
+                              value = value.slice(0, 2) + ':' + value.slice(2, 4);
                             }
+                            updateStopTiming(index, 'arrivalTime', value);
                           }}
                           maxLength={5}
                           required
@@ -555,10 +555,11 @@ const AdminPage = () => {
                               placeholder="HH:MM"
                               value={stopTiming.arrivalTime}
                               onChange={(e) => {
-                                const value = e.target.value;
-                                if (/^[0-9:]*$/.test(value)) {
-                                  updateStopTiming(index, 'arrivalTime', value);
+                                let value = e.target.value.replace(/[^0-9]/g, '');
+                                if (value.length >= 2) {
+                                  value = value.slice(0, 2) + ':' + value.slice(2, 4);
                                 }
+                                updateStopTiming(index, 'arrivalTime', value);
                               }}
                               maxLength={5}
                               required
