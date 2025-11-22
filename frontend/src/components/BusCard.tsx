@@ -1,7 +1,6 @@
-import { Clock, MapPin, Bus as BusIcon, ChevronDown, ChevronUp, Navigation, ArrowRight } from 'lucide-react';
+import { MapPin, Bus as BusIcon, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import { BusResult } from '../types';
 import { useState } from 'react';
-import BusProgress from './BusProgress';
 
 interface BusCardProps {
   result: BusResult;
