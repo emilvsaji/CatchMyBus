@@ -22,7 +22,9 @@ console.log('CORS allowed origins:', allowedOrigins);
 const corsOptions = {
   origin: (origin: any, callback: any) => {
     if (!origin) return callback(null, true); // allow curl, mobile apps, same-origin
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    const normalizedOrigin = origin.replace(/\/$/, ''); // remove trailing slash
+    console.log('Normalized origin:', normalizedOrigin);
+    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
     return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
