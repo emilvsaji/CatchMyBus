@@ -1,6 +1,7 @@
-import { MapPin, Bus as BusIcon, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
+import { Clock, MapPin, Bus as BusIcon, ChevronDown, ChevronUp, Navigation } from 'lucide-react';
 import { BusResult } from '../types';
 import { useState } from 'react';
+import BusProgress from './BusProgress';
 
 interface BusCardProps {
   result: BusResult;
@@ -11,152 +12,183 @@ const BusCard = ({ result, compact = false }: BusCardProps) => {
   const { bus, fromTiming, toTiming, distance, estimatedTime, fare, partial } = result;
   const [expanded, setExpanded] = useState(false);
 
-  const getBusTypeStyles = (type: string) => {
+  const getBusTypeColor = (type: string) => {
     switch (type) {
-      case 'KSRTC': return 'bg-blue-50 text-blue-700 border-blue-100';
-      case 'Private': return 'bg-purple-50 text-purple-700 border-purple-100';
-      case 'Fast': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-      case 'Super Fast': return 'bg-rose-50 text-rose-700 border-rose-100';
-      default: return 'bg-gray-50 text-gray-700 border-gray-100';
+      case 'KSRTC':
+        return 'bg-blue-100 text-blue-800';
+      case 'Private':
+        return 'bg-purple-100 text-purple-800';
+      case 'Fast':
+        return 'bg-green-100 text-green-800';
+      case 'Super Fast':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
-    <div className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden">
-      {/* Partial Match Banner */}
-      {partial && (
-        <div className="bg-amber-50 border-b border-amber-100 px-4 py-1.5 flex items-center justify-center">
-          <span className="text-xs font-medium text-amber-700 flex items-center">
-            ⚠️ Partial Route Match
-          </span>
+    <div className="card hover:shadow-2xl transition-all duration-300 animate-slide-up relative overflow-hidden">
+      {/* Show badge when timings are estimated */}
+      {result.timingSource === 'estimated' && (
+        <div className="absolute left-4 top-4 bg-yellow-50 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium z-20">
+          Estimated times
         </div>
       )}
+      {/* Partial Match Banner */}
+      {partial && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 px-4 py-2 mb-4">
+          <p className="text-sm text-yellow-800 font-medium">
+            ⚠️ Partial Match - This bus passes through one of your searched stops
+          </p>
+        </div>
+      )}
+      
+      {/* Animated Bus Icon */}
+      <div className="absolute top-4 right-4 opacity-10">
+        <BusIcon className="h-24 w-24 text-primary-600 animate-pulse" />
+      </div>
 
-      <div className="p-5">
-        {/* Header: Bus Info & Price */}
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex items-start space-x-3">
-            <div className={`p-2.5 rounded-xl ${getBusTypeStyles(bus.type).split(' ')[0]}`}>
-              <BusIcon className={`h-6 w-6 ${getBusTypeStyles(bus.type).split(' ')[1]}`} />
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between relative z-10">
+        {/* Bus Info */}
+        <div className="flex-1 mb-4 md:mb-0">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="bg-primary-600 p-3 rounded-lg">
+              <BusIcon className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900 leading-tight">{bus.busName}</h3>
-              <div className="flex items-center mt-1 space-x-2">
-                <span className="text-xs text-gray-500 font-medium tracking-wide">#{bus.busNumber}</span>
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getBusTypeStyles(bus.type)}`}>
-                  {bus.type}
-                </span>
+              <h3 className="text-xl font-bold text-gray-800">{bus.busName}</h3>
+              <p className="text-sm text-gray-600">Bus No: {bus.busNumber}</p>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getBusTypeColor(bus.type)}`}>
+              {bus.type}
+            </span>
+          </div>
+
+          {/* Timing Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-start space-x-2">
+              <MapPin className="h-5 w-5 text-green-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-gray-700">{fromTiming?.stopName || 'N/A'}</p>
+                <p className="text-lg font-bold text-gray-900">{fromTiming?.departureTime || 'TBD'}</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-2">
+              <MapPin className="h-5 w-5 text-red-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-gray-700">{toTiming?.stopName || 'N/A'}</p>
+                <p className="text-lg font-bold text-gray-900">{toTiming?.arrivalTime || 'TBD'}</p>
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-xl font-bold text-gray-900">
-              {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(fare || 0)}
-            </div>
-            <div className="text-xs text-gray-500 font-medium">per person</div>
-          </div>
         </div>
 
-        {/* Journey Timeline */}
-        <div className="flex items-center justify-between mb-6 relative">
-          {/* From */}
-          <div className="flex-1">
-            <div className="text-2xl font-bold text-gray-900 mb-0.5">{fromTiming?.departureTime || '--:--'}</div>
-            <div className="flex items-center text-gray-500 text-sm font-medium">
-              <MapPin className="h-3.5 w-3.5 mr-1 text-gray-400" />
-              <span className="truncate max-w-[100px] md:max-w-[140px]">{fromTiming?.stopName}</span>
+        {/* Stats */}
+        <div className="border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6 md:ml-6 w-full md:w-auto">
+          <div className="flex md:flex-col space-x-6 md:space-x-0 md:space-y-3">
+            <div className="text-center">
+              <Clock className="h-5 w-5 text-gray-600 mx-auto mb-1" />
+              <p className="text-xs text-gray-600">Duration</p>
+              <p className="text-sm font-bold text-gray-900">{estimatedTime ?? 'N/A'} min</p>
+            </div>
+            <div className="text-center">
+              <MapPin className="h-5 w-5 text-gray-600 mx-auto mb-1" />
+              <p className="text-xs text-gray-600">Distance</p>
+              <p className="text-sm font-bold text-gray-900">{distance ?? 'N/A'} km</p>
+            </div>
+            <div className="text-center">
+              <div className="text-gray-600 mx-auto mb-1 text-xl font-medium">₹</div>
+              <p className="text-xs text-gray-600">Fare</p>
+              <p className="text-sm font-bold text-green-600">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(fare || 0)}</p>
             </div>
           </div>
-
-          {/* Duration / Connector */}
-          <div className="flex flex-col items-center px-4 w-1/3">
-            <div className="text-xs font-medium text-gray-400 mb-1">{estimatedTime} min</div>
-            <div className="w-full h-px bg-gray-200 relative flex items-center justify-center">
-              <div className="absolute w-2 h-2 bg-gray-300 rounded-full -left-1"></div>
-              <div className="absolute w-2 h-2 bg-gray-300 rounded-full -right-1"></div>
-              <BusIcon className="h-4 w-4 text-gray-300 absolute bg-white px-0.5" />
-            </div>
-            <div className="text-[10px] text-gray-400 mt-1">{distance} km</div>
-          </div>
-
-          {/* To */}
-          <div className="flex-1 text-right">
-            <div className="text-2xl font-bold text-gray-900 mb-0.5">{toTiming?.arrivalTime || '--:--'}</div>
-            <div className="flex items-center justify-end text-gray-500 text-sm font-medium">
-              <span className="truncate max-w-[100px] md:max-w-[140px]">{toTiming?.stopName}</span>
-              <MapPin className="h-3.5 w-3.5 ml-1 text-gray-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+          {/* 3D Bus Animation - hide in compact mode to save perf */}
           {!compact && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="text-sm font-medium text-gray-500 hover:text-primary-600 flex items-center transition-colors"
-            >
-              {expanded ? 'Hide Stops' : 'View Stops'}
-              {expanded ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
-            </button>
-          )}
-          
-          {compact ? (
-             <div className="w-full flex justify-between items-center">
-                <span className="text-xs text-gray-400 font-medium">
-                  {result.timingSource === 'estimated' ? 'Estimated Timings' : 'Actual Timings'}
-                </span>
-                <button className="text-sm font-semibold text-primary-600 hover:text-primary-700 flex items-center">
-                  View Details <ArrowRight className="h-4 w-4 ml-1" />
-                </button>
-             </div>
-          ) : (
-            <div className="flex space-x-3 ml-auto">
-               <button className="px-4 py-2 rounded-lg bg-primary-50 text-primary-700 text-sm font-semibold hover:bg-primary-100 transition-colors">
-                Track Live
-              </button>
-              <button className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 shadow-sm hover:shadow transition-all">
-                Book Seat
-              </button>
+            <div className="mt-3 w-full min-w-[260px]">
+              <BusProgress height={80} />
             </div>
           )}
         </div>
       </div>
 
-      {/* Expanded Route View */}
-      {!compact && expanded && (
-        <div className="bg-gray-50 p-5 border-t border-gray-100 animate-slide-down">
-          <div className="relative pl-4 space-y-6">
-            <div className="absolute left-[23px] top-2 bottom-2 w-0.5 bg-gray-200"></div>
-            {bus.route && bus.route.map((stop: any, idx: number) => {
-              const stopName = typeof stop === 'string' ? stop : stop?.name || stop?.stopName || 'Unknown';
-              const isStart = idx === 0;
-              const isEnd = idx === bus.route.length - 1;
-              const isFromStop = stopName.toLowerCase().includes(fromTiming.stopName.toLowerCase()) || fromTiming.stopName.toLowerCase().includes(stopName.toLowerCase());
-              const isToStop = stopName.toLowerCase().includes(toTiming.stopName.toLowerCase()) || toTiming.stopName.toLowerCase().includes(stopName.toLowerCase());
-              
-              return (
-                <div key={idx} className="relative flex items-center z-10">
-                  <div className={`w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm ${
-                    isStart || isEnd ? 'bg-primary-600 w-3.5 h-3.5' : 
-                    isFromStop || isToStop ? 'bg-blue-500 w-3.5 h-3.5 ring-2 ring-blue-100' : 'bg-gray-400'
-                  }`}></div>
-                  <div className="ml-4 flex-1">
-                    <p className={`text-sm ${isStart || isEnd || isFromStop || isToStop ? 'font-bold text-gray-900' : 'font-medium text-gray-600'}`}>
-                      {stopName}
-                      {isFromStop && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">Boarding</span>}
-                      {isToStop && <span className="ml-2 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Dropping</span>}
-                    </p>
-                    {(isFromStop || isToStop) && bus.timings && bus.timings[idx] && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {bus.timings[idx].arrivalTime} - {bus.timings[idx].departureTime}
-                      </p>
-                    )}
-                  </div>
+      {/* Expandable Route Details */}
+      {!compact && bus.route && Array.isArray(bus.route) && bus.route.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
+          >
+            <span className="flex items-center">
+              <Navigation className="h-4 w-4 mr-2" />
+              View Full Route ({bus.route.length} stops)
+            </span>
+            {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+
+          {expanded && (
+            <div className="mt-4 animate-slide-up">
+              <div className="relative">
+                {/* Route Line */}
+                <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-green-500 via-blue-500 to-red-500"></div>
+                
+                {/* Stops List */}
+                <div className="space-y-4">
+                  {bus.route.map((stop: any, idx: number) => {
+                    const stopName = typeof stop === 'string' ? stop : stop?.name || stop?.stopName || stop?.stop || 'Unknown';
+                    const isFirst = idx === 0;
+                    const isLast = idx === bus.route.length - 1;
+                    const isFromStop = stopName.toLowerCase().includes(fromTiming.stopName.toLowerCase()) || fromTiming.stopName.toLowerCase().includes(stopName.toLowerCase());
+                    const isToStop = stopName.toLowerCase().includes(toTiming.stopName.toLowerCase()) || toTiming.stopName.toLowerCase().includes(stopName.toLowerCase());
+                    
+                    return (
+                      <div key={idx} className="flex items-center relative">
+                        {/* Stop Marker */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 ${
+                          isFirst ? 'bg-green-500 animate-bounce' : 
+                          isLast ? 'bg-red-500 animate-pulse' : 
+                          isFromStop || isToStop ? 'bg-blue-500 ring-4 ring-blue-200' :
+                          'bg-gray-300'
+                        }`}>
+                          {isFirst || isLast ? (
+                            <MapPin className="h-5 w-5 text-white" />
+                          ) : (
+                            <div className="w-3 h-3 bg-white rounded-full"></div>
+                          )}
+                        </div>
+                        
+                        {/* Stop Info */}
+                        <div className="ml-4 flex-1">
+                          <p className={`font-medium ${
+                            isFromStop || isToStop ? 'text-blue-700 text-lg' : 'text-gray-700'
+                          }`}>
+                            {stopName}
+                            {isFirst && ' (Start)'}
+                            {isLast && ' (End)'}
+                            {isFromStop && !isFirst && ' (Your From)'}
+                            {isToStop && !isLast && ' (Your To)'}
+                          </p>
+                          {(isFromStop || isToStop) && bus.timings && bus.timings[idx] && (
+                            <p className="text-sm text-gray-600">
+                              Arrival: {bus.timings[idx].arrivalTime || 'N/A'} | 
+                              Departure: {bus.timings[idx].departureTime || 'N/A'}
+                            </p>
+                          )}
+                        </div>
+                        
+                        {/* Animated Bus Icon for current position */}
+                        {idx < bus.route.length - 1 && idx % 3 === 1 && (
+                          <div className="absolute left-3 animate-bus-move">
+                            <BusIcon className="h-6 w-6 text-primary-600" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
