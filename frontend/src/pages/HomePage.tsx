@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Navigation, Clock, Star } from 'lucide-react';
+import { Search, MapPin, Navigation, Clock, Star, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
 import { BusResult } from '../types';
@@ -168,34 +168,43 @@ const HomePage = () => {
       </div>
 
       {/* Inline Results (when searched) */}
-      <div className="max-w-3xl mx-auto mb-16 animate-slide-up">
+      <div className="max-w-4xl mx-auto mb-20">
         {loadingResults ? (
-          <div className="card text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching for buses...</p>
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-600 mb-4"></div>
+            <p className="text-gray-500 font-medium">Finding the best buses for you...</p>
           </div>
-        ) : results.length === 0 ? null : (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Search Results</h2>
-              <button onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}&time=${encodeURIComponent(formData.time)}&showAll=${formData.showAll}`)} className="text-sm text-primary-600 hover:underline">
-                View full results
+        ) : results.length > 0 && (
+          <div className="animate-fade-in">
+            <div className="flex items-end justify-between mb-6 px-2">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Available Buses</h2>
+                <p className="text-gray-500 mt-1">Found {results.length} buses for your route</p>
+              </div>
+              <button 
+                onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}&time=${encodeURIComponent(formData.time)}&showAll=${formData.showAll}`)}
+                className="text-primary-600 font-semibold hover:text-primary-700 flex items-center transition-colors"
+              >
+                View All Results <ArrowRight className="h-4 w-4 ml-1" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid gap-4">
               {results.slice(0, 3).map((r, i) => (
                 <BusCard key={i} result={r} compact={true} />
               ))}
-              {results.length > 3 && (
-                <button 
-                  onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}&time=${encodeURIComponent(formData.time)}&showAll=${formData.showAll}`)}
-                  className="w-full btn-secondary py-3"
-                >
-                  View All {results.length} Results →
-                </button>
-              )}
             </div>
+            
+            {results.length > 3 && (
+               <div className="mt-6 text-center">
+                  <button 
+                    onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}&time=${encodeURIComponent(formData.time)}&showAll=${formData.showAll}`)}
+                    className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full text-primary-700 bg-primary-100 hover:bg-primary-200 transition-all duration-200"
+                  >
+                    Show {results.length - 3} more buses
+                  </button>
+               </div>
+            )}
           </div>
         )}
       </div>
