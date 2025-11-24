@@ -17,7 +17,7 @@ Thank you for considering contributing to CatchMyBus! This document provides gui
 1. **Fork the repository**
 2. **Clone your fork**
    ```bash
-   git clone https://github.com/your-username/CatchMyBus.git
+   git clone https://github.com/emilvsaji/CatchMyBus.git
    cd CatchMyBus
    ```
 3. **Create a branch**

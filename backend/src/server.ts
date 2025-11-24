@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 
 // Build allowed origins from environment, with sensible defaults for local dev
 const frontendEnv = process.env.FRONTEND_URL || 'http://localhost:5173';
-const frontendOrigins = frontendEnv.split(',').map((s) => s.trim()).filter(Boolean);
+const frontendOrigins = frontendEnv.split(',').map((s) => s.trim().replace(/\/$/, '')).filter(Boolean);
 const devOrigins = ['http://localhost:3000'];
 const allowedOrigins = Array.from(new Set([...frontendOrigins, ...devOrigins]));
 console.log('CORS allowed origins:', allowedOrigins);
@@ -22,7 +22,11 @@ console.log('CORS allowed origins:', allowedOrigins);
 const corsOptions = {
   origin: (origin: any, callback: any) => {
     if (!origin) return callback(null, true); // allow curl, mobile apps, same-origin
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    const normalizedOrigin = origin.replace(/\/$/, ''); // remove trailing slash
+    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
+    
+    console.log('CORS blocked origin:', origin, 'Normalized:', normalizedOrigin);
+    console.log('Allowed origins:', allowedOrigins);
     return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

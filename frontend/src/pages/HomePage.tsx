@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Navigation, Clock, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
 import { BusResult } from '../types';
 import BusCard from '../components/BusCard';
+import AutocompleteInput from '../components/AutocompleteInput';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -17,6 +18,22 @@ const HomePage = () => {
   });
   const [loadingResults, setLoadingResults] = useState(false);
   const [results, setResults] = useState<BusResult[]>([]);
+  const [stops, setStops] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchStops = async () => {
+      try {
+        const response = await api.get('/api/buses/stops');
+        if (response.data.success) {
+          const stopNames = response.data.data.map((stop: any) => stop.name);
+          setStops(Array.from(new Set(stopNames)));
+        }
+      } catch (error) {
+        console.error('Failed to fetch stops:', error);
+      }
+    };
+    fetchStops();
+  }, []);
 
   const fetchBusResults = async (from: string, to: string, type: string) => {
     try {
@@ -85,31 +102,25 @@ const HomePage = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* From Location */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="h-4 w-4 inline mr-1" />
-                From (Current Location / Bus Stop)
-              </label>
-              <input
-                type="text"
-                className="input-field"
+              <AutocompleteInput
+                label="From (Current Location / Bus Stop)"
                 placeholder="Enter starting point (e.g., Thiruvananthapuram)"
                 value={formData.from}
-                onChange={(e) => setFormData({ ...formData, from: e.target.value })}
+                onChange={(val) => setFormData({ ...formData, from: val })}
+                suggestions={stops}
+                icon={<MapPin className="h-4 w-4 inline mr-1" />}
               />
             </div>
 
             {/* To Location */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Navigation className="h-4 w-4 inline mr-1" />
-                To (Destination Bus Stop)
-              </label>
-              <input
-                type="text"
-                className="input-field"
+              <AutocompleteInput
+                label="To (Destination Bus Stop)"
                 placeholder="Enter destination (e.g., Kochi)"
                 value={formData.to}
-                onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                onChange={(val) => setFormData({ ...formData, to: val })}
+                suggestions={stops}
+                icon={<Navigation className="h-4 w-4 inline mr-1" />}
               />
             </div>
 
