@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Bus, MapPin, Save, AlertCircle, X, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Bus, MapPin, Save, AlertCircle, X, Edit2, Trash2, Search, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
 
@@ -134,6 +134,32 @@ const AdminPage = () => {
       console.error('Error deleting bus:', error);
       toast.error('Failed to delete bus');
     }
+  };
+
+  const handleDuplicateBus = (bus: BusData) => {
+    // Prefill the Add Bus form with a copy of the selected bus (do not set editingBus)
+    const parsedTimings: StopTiming[] = bus.timings.map(timing => {
+      const [time, period] = timing.time.split(' ');
+      return {
+        stopName: timing.stop,
+        arrivalTime: time,
+        period: (period as 'AM' | 'PM') || 'AM'
+      };
+    });
+
+    setEditingBus(null);
+    setActiveTab('buses');
+    setBusForm({
+      busName: `${bus.busName} (copy)`,
+      from: bus.from,
+      via: bus.via || '',
+      to: bus.to,
+      type: bus.type,
+    });
+    setStopTimings(parsedTimings.length > 0 ? parsedTimings : [{ stopName: '', arrivalTime: '', period: 'AM' }]);
+    setPasteStopsText('');
+    // Scroll to top so admin can see the Add Bus form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
@@ -727,6 +753,13 @@ const AdminPage = () => {
                               title="Edit bus"
                             >
                               <Edit2 className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleDuplicateBus(bus)}
+                              className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                              title="Duplicate bus"
+                            >
+                              <Copy className="h-5 w-5" />
                             </button>
                             <button
                               onClick={() => handleDeleteBus(bus.id, bus.busName)}
