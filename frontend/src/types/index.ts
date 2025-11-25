@@ -19,6 +19,8 @@ export interface Bus {
   timings: BusTiming[];
   fare?: number;
   createdAt: Date;
+  from?: string; // Optional: starting stop
+  to?: string; // Optional: ending stop
 }
 
 export interface BusTiming {
@@ -73,4 +75,7 @@ export interface BusResult {
   fare: number;
   partial?: boolean; // Flag for partial matches
   timingSource?: 'actual' | 'estimated'; // Source of timing data
+  requestedFrom?: string; // User's search origin
+  requestedTo?: string; // User's search destination
+  requestedTime?: string; // User's search time
 }
