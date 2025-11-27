@@ -161,7 +161,14 @@ router.get('/search', async (req: Request, res: Response) => {
         let toTiming: any = null;
         let usedProvidedTimings = false;
         if (Array.isArray(bus.timings)) {
-          const normalizedTimings = (bus.timings as any[]).map(t => ({...t, _n: normalize(t.stopName || t.stop || '')}));
+          // Normalize timings and support legacy `{ stop, time }` entries by
+          // mapping `time` -> `arrivalTime`/`departureTime` when missing.
+          const normalizedTimings = (bus.timings as any[]).map(t => {
+            const stopName = t.stopName || t.stop || '';
+            const arrival = t.arrivalTime || t.time || t.departureTime || '';
+            const departure = t.departureTime || t.time || t.arrivalTime || '';
+            return { ...t, stopName, arrivalTime: arrival, departureTime: departure, _n: normalize(stopName) };
+          });
           const matchFrom = normalizedTimings.find(t => t._n.includes(qFrom) || qFrom.includes(t._n));
           const matchTo = normalizedTimings.find(t => t._n.includes(qTo) || qTo.includes(t._n));
           if (matchFrom) fromTiming = matchFrom;
@@ -202,7 +209,19 @@ router.get('/search', async (req: Request, res: Response) => {
 
         // If time filtering is requested, parse the bus departure time at the from stop
         const parseTimeField = (tstr: string) => parseTimeToMinutes(tstr as string);
-        const departMinutes = parseTimeField(fromTiming.departureTime) ?? parseTimeField(fromTiming.arrivalTime) ?? null;
+
+        // Treat placeholder times like '00', '00:00', '00AM' as missing data and do NOT consider them
+        const rawDepartStr = String(fromTiming.departureTime || fromTiming.arrivalTime || fromTiming.time || '').trim();
+        const isPlaceholderTime = (s: string) => {
+          if (!s) return true;
+          const norm = s.replace(/\s+/g, '').toLowerCase();
+          // matches '00', '0:00', '00:00', optionally with am/pm like '00am'
+          return /^0{1,2}(:0{2})?(am|pm)?$/.test(norm);
+        };
+
+        const departMinutes = !isPlaceholderTime(rawDepartStr)
+          ? (parseTimeField(fromTiming.departureTime) ?? parseTimeField(fromTiming.arrivalTime) ?? parseTimeField(fromTiming.time) ?? null)
+          : null;
 
         const timingSource = usedProvidedTimings ? 'provided' : 'estimated';
         const resultObj = {
@@ -231,7 +250,7 @@ router.get('/search', async (req: Request, res: Response) => {
           const diff = departMinutes - requestedMinutes; // positive => after requested
           timeCandidates.push({ result: resultObj, departMinutes, absDiff: Math.abs(diff) });
         } else {
-          // No concrete timing for this bus; still push to results as fallback but make sure times exist
+          // No concrete timing for this bus (or placeholder like '00'); still push to results as fallback
           results.push(resultObj);
         }
         continue; // matched by route, continue to next bus
@@ -291,8 +310,9 @@ router.get('/search', async (req: Request, res: Response) => {
 
     console.log(`\n=== SEARCH END === Found ${results.length} result(s)\n`);
 
-    // If we collected time candidates, prefer buses at/after requested time, otherwise show nearest
-      if (timeCandidates.length > 0) {
+    // If we collected time candidates, prefer exact-time matches when the user supplied a time;
+    // otherwise fall back to closest-by-time or the previous top-3 behavior when no time param
+    if (timeCandidates.length > 0) {
       if (showAll) {
         // Return all directional matches sorted by departure time (earliest first)
         const withDepart = timeCandidates
@@ -311,45 +331,48 @@ router.get('/search', async (req: Request, res: Response) => {
         console.log(`\n=== SEARCH END === Returning ${deduped.length} time-filtered (showAll) result(s)\n`);
         return res.json({ success: true, data: deduped, count: deduped.length });
       }
-      // If timeCandidates exist and not showing all, prefer the top 3 closest by time
-      if (timeCandidates.length > 0 && !showAll) {
-        // Annotate diffs and pick at-or-after first, otherwise nearest by absDiff
-        const annotated = timeCandidates.map(tc => {
-          const diff = (tc.departMinutes ?? 0) - requestedMinutes;
-          return { ...tc, diff };
-        });
-        const atOrAfter = annotated.filter(a => a.diff >= 0).sort((x, y) => x.diff - y.diff);
-        let chosen: any[] = [];
-        if (atOrAfter.length > 0) {
-          chosen = atOrAfter.map(a => a.result).slice(0, 3);
-        } else {
-          // No future buses — pick nearest by absolute diff
-          const nearest = annotated.sort((x, y) => x.absDiff! - y.absDiff!).slice(0, 3);
-          chosen = nearest.map(n => n.result);
+
+      const timeParamProvided = !!timeParam && timeParam.trim() !== '';
+
+      if (timeParamProvided) {
+        // First try to return all buses that depart exactly at the requested time
+        const exact = timeCandidates
+          .filter(tc => typeof tc.departMinutes === 'number' && tc.departMinutes === requestedMinutes)
+          .sort((a, b) => (a.departMinutes! - b.departMinutes!))
+          .map(tc => tc.result);
+
+        if (exact.length > 0) {
+          const merged = [...exact, ...results];
+          const seen = new Set();
+          const deduped = merged.filter(r => {
+            const id = r.bus?.id || JSON.stringify(r.bus);
+            if (seen.has(id)) return false;
+            seen.add(id);
+            return true;
+          });
+          console.log(`\n=== SEARCH END === Returning ${deduped.length} exact-time result(s)\n`);
+          return res.json({ success: true, data: deduped, count: deduped.length });
         }
 
-        // Merge chosen with any fallback results we added earlier (no timing), keeping chosen first
-        const merged = [...chosen, ...results];
-        // Deduplicate by bus id
+        // No exact matches — return all buses sorted by closeness to requested time
+        const sortedByCloseness = timeCandidates
+          .slice()
+          .sort((a, b) => (a.absDiff! - b.absDiff!))
+          .map(tc => tc.result);
+
+        const merged = [...sortedByCloseness, ...results];
         const seen = new Set();
         const deduped = merged.filter(r => {
           const id = r.bus?.id || JSON.stringify(r.bus);
           if (seen.has(id)) return false;
           seen.add(id);
           return true;
-        }).slice(0, 3); // return top-3 overall
-
-        console.log(`\n=== SEARCH END === Returning ${deduped.length} time-filtered (top-3) result(s)\n`);
-        // Detailed debug: print chosen buses and their departure minutes (if available)
-        for (const r of deduped) {
-          const id = r.bus?.id || JSON.stringify(r.bus);
-          const candidate = timeCandidates.find(tc => (tc.result.bus?.id || JSON.stringify(tc.result.bus)) === id);
-          const departMin = candidate?.departMinutes;
-          console.log(`  -> Bus: ${r.bus?.busName || id} id=${id} departMinutes=${departMin ?? 'N/A'} departTime=${departMin != null ? minutesToTimeString(departMin) : 'N/A'}`);
-        }
+        });
+        console.log(`\n=== SEARCH END === No exact matches — returning ${deduped.length} closest-by-time result(s)\n`);
         return res.json({ success: true, data: deduped, count: deduped.length });
       }
-      // Attach diff (depart - requested) and sort
+
+      // No explicit time requested — keep previous top-3 behavior (prefer at-or-after, else nearest)
       const annotated = timeCandidates.map(tc => {
         const diff = (tc.departMinutes ?? 0) - requestedMinutes;
         return { ...tc, diff };
@@ -357,20 +380,33 @@ router.get('/search', async (req: Request, res: Response) => {
       const atOrAfter = annotated.filter(a => a.diff >= 0).sort((x, y) => x.diff - y.diff);
       let chosen: any[] = [];
       if (atOrAfter.length > 0) {
-        chosen = atOrAfter.map(a => a.result);
+        chosen = atOrAfter.map(a => a.result).slice(0, 3);
       } else {
         // No future buses — pick nearest by absolute diff
-        const nearest = annotated.sort((x, y) => x.absDiff! - y.absDiff!).slice(0, 10);
+        const nearest = annotated.sort((x, y) => x.absDiff! - y.absDiff!).slice(0, 3);
         chosen = nearest.map(n => n.result);
       }
 
       // Merge chosen with any fallback results we added earlier (no timing), keeping chosen first
       const merged = [...chosen, ...results];
-      // Limit results to a reasonable number (e.g., 50)
-      const final = merged.slice(0, 50);
+      // Deduplicate by bus id
+      const seen = new Set();
+      const deduped = merged.filter(r => {
+        const id = r.bus?.id || JSON.stringify(r.bus);
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      }).slice(0, 3); // return top-3 overall
 
-      console.log(`\n=== SEARCH END === Returning ${final.length} time-filtered result(s)\n`);
-      return res.json({ success: true, data: final, count: final.length });
+      console.log(`\n=== SEARCH END === Returning ${deduped.length} time-filtered (top-3) result(s)\n`);
+      // Detailed debug: print chosen buses and their departure minutes (if available)
+      for (const r of deduped) {
+        const id = r.bus?.id || JSON.stringify(r.bus);
+        const candidate = timeCandidates.find(tc => (tc.result.bus?.id || JSON.stringify(tc.result.bus)) === id);
+        const departMin = candidate?.departMinutes;
+        console.log(`  -> Bus: ${r.bus?.busName || id} id=${id} departMinutes=${departMin ?? 'N/A'} departTime=${departMin != null ? minutesToTimeString(departMin) : 'N/A'}`);
+      }
+      return res.json({ success: true, data: deduped, count: deduped.length });
     }
 
     // Fallback: no time-aware candidates, sort by departureTime string if available
