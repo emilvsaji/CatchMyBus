@@ -5,32 +5,33 @@ import api from '../config/api';
 
 interface StopTiming {
   stopName: string;
-  arrivalTime: string;
-  period: 'AM' | 'PM';
+  times: { arrivalTime: string; period: 'AM' | 'PM' }[];
 }
 
 interface BusData {
   id: string;
+  busNumber?: string;
   busName: string;
   from: string;
   via: string;
   to: string;
   type: string;
   route: string[];
-  timings: Array<{ stop: string; time: string }>;
+  timings: Array<{ stop?: string; stopName?: string; time?: string; arrivalTime?: string; departureTime?: string }>;
 }
 
 const AdminPage = () => {
   const [activeTab, setActiveTab] = useState<'buses' | 'stops'>('buses');
   const [busForm, setBusForm] = useState({
     busName: '',
+    busNumber: '',
     from: '',
     via: '',
     to: '',
     type: 'KSRTC',
   });
   const [stopTimings, setStopTimings] = useState<StopTiming[]>([
-    { stopName: '', arrivalTime: '', period: 'AM' }
+    { stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }
   ]);
   const [pasteStopsText, setPasteStopsText] = useState('');
   
@@ -63,17 +64,23 @@ const AdminPage = () => {
     setEditingBus(bus);
     
     // Parse timings back into form format
-    const parsedTimings: StopTiming[] = bus.timings.map(timing => {
-      const [time, period] = timing.time.split(' ');
-      return {
-        stopName: timing.stop,
-        arrivalTime: time,
-        period: (period as 'AM' | 'PM') || 'AM'
-      };
-    });
+    // Group timings by stop (a bus may have multiple times per stop)
+    const grouped: Record<string, { arrivalTime: string; period: 'AM' | 'PM' }[]> = {};
+    for (const timing of bus.timings) {
+      // Support legacy {stop, time} and newer {stopName, arrivalTime, departureTime}
+      const stopKey = (timing.stop || timing.stopName || '').trim();
+      const timeRaw = timing.time || timing.arrivalTime || timing.departureTime || '';
+      const parts = (timeRaw || '').trim().split(/\s+/);
+      const time = parts[0] || '';
+      const period = (parts[1] || 'AM') as 'AM' | 'PM';
+      if (!grouped[stopKey]) grouped[stopKey] = [];
+      grouped[stopKey].push({ arrivalTime: time, period });
+    }
+    const parsedTimings: StopTiming[] = Object.keys(grouped).map(stop => ({ stopName: stop, times: grouped[stop] }));
     
     setBusForm({
       busName: bus.busName,
+      busNumber: (bus as any).busNumber || '',
       from: bus.from,
       via: bus.via || '',
       to: bus.to,
@@ -88,7 +95,7 @@ const AdminPage = () => {
     
     if (!editingBus) return;
     
-    const hasEmptyFields = stopTimings.some(st => !st.stopName.trim() || !st.arrivalTime.trim());
+    const hasEmptyFields = stopTimings.some(st => !st.stopName.trim() || st.times.some(t => !t.arrivalTime.trim()));
     if (hasEmptyFields) {
       toast.error('Please fill all stop names and times');
       return;
@@ -96,23 +103,21 @@ const AdminPage = () => {
 
     const busData = {
       busName: busForm.busName,
+      busNumber: busForm.busNumber,
       from: busForm.from,
       via: busForm.via,
       to: busForm.to,
       type: busForm.type,
       route: stopTimings.map(st => st.stopName.trim()),
-      timings: stopTimings.map(st => ({
-        stop: st.stopName.trim(),
-        time: `${st.arrivalTime} ${st.period}`
-      }))
+      timings: stopTimings.flatMap(st => st.times.map(t => ({ stopName: st.stopName.trim(), arrivalTime: `${t.arrivalTime} ${t.period}`, departureTime: `${t.arrivalTime} ${t.period}` })))
     };
     
     try {
       await api.put(`/api/admin/buses/${editingBus.id}`, busData);
       toast.success('Bus updated successfully!');
       setEditingBus(null);
-      setBusForm({ busName: '', from: '', via: '', to: '', type: 'KSRTC' });
-      setStopTimings([{ stopName: '', arrivalTime: '', period: 'AM' }]);
+      setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'KSRTC' });
+      setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
       setPasteStopsText('');
       fetchAllBuses();
     } catch (error: any) {
@@ -138,25 +143,30 @@ const AdminPage = () => {
 
   const handleDuplicateBus = (bus: BusData) => {
     // Prefill the Add Bus form with a copy of the selected bus (do not set editingBus)
-    const parsedTimings: StopTiming[] = bus.timings.map(timing => {
-      const [time, period] = timing.time.split(' ');
-      return {
-        stopName: timing.stop,
-        arrivalTime: time,
-        period: (period as 'AM' | 'PM') || 'AM'
-      };
-    });
+    // Group timings by stop
+    const grouped: Record<string, { arrivalTime: string; period: 'AM' | 'PM' }[]> = {};
+    for (const timing of bus.timings) {
+      const stopKey = (timing.stop || timing.stopName || '').trim();
+      const timeRaw = timing.time || timing.arrivalTime || timing.departureTime || '';
+      const parts = (timeRaw || '').trim().split(/\s+/);
+      const time = parts[0] || '';
+      const period = (parts[1] || 'AM') as 'AM' | 'PM';
+      if (!grouped[stopKey]) grouped[stopKey] = [];
+      grouped[stopKey].push({ arrivalTime: time, period });
+    }
+    const parsedTimings: StopTiming[] = Object.keys(grouped).map(stop => ({ stopName: stop, times: grouped[stop] }));
 
     setEditingBus(null);
     setActiveTab('buses');
     setBusForm({
       busName: `${bus.busName} (copy)`,
+      busNumber: (bus as any).busNumber || '',
       from: bus.from,
       via: bus.via || '',
       to: bus.to,
       type: bus.type,
     });
-    setStopTimings(parsedTimings.length > 0 ? parsedTimings : [{ stopName: '', arrivalTime: '', period: 'AM' }]);
+    setStopTimings(parsedTimings.length > 0 ? parsedTimings : [{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
     setPasteStopsText('');
     // Scroll to top so admin can see the Add Bus form
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -164,8 +174,8 @@ const AdminPage = () => {
 
   const handleCancelEdit = () => {
     setEditingBus(null);
-    setBusForm({ busName: '', from: '', via: '', to: '', type: 'KSRTC' });
-    setStopTimings([{ stopName: '', arrivalTime: '', period: 'AM' }]);
+    setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'KSRTC' });
+    setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
     setPasteStopsText('');
   };
 
@@ -174,6 +184,7 @@ const AdminPage = () => {
     const query = searchQuery.toLowerCase();
     return (
       bus.busName.toLowerCase().includes(query) ||
+      (bus.busNumber || '').toLowerCase().includes(query) ||
       bus.from.toLowerCase().includes(query) ||
       bus.to.toLowerCase().includes(query) ||
       (bus.via && bus.via.toLowerCase().includes(query)) ||
@@ -182,7 +193,7 @@ const AdminPage = () => {
   });
 
   const addStopTimingField = () => {
-    setStopTimings([...stopTimings, { stopName: '', arrivalTime: '', period: 'AM' }]);
+    setStopTimings([...stopTimings, { stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
   };
 
   const importPastedStops = (replace = true) => {
@@ -191,7 +202,7 @@ const AdminPage = () => {
     const parts = pasteStopsText.split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
     if (parts.length === 0) return;
 
-    const newRows: StopTiming[] = parts.map(p => ({ stopName: p, arrivalTime: '', period: 'AM' }));
+    const newRows: StopTiming[] = parts.map(p => ({ stopName: p, times: [{ arrivalTime: '', period: 'AM' }] }));
     if (replace) setStopTimings(newRows);
     else setStopTimings([...stopTimings, ...newRows]);
     setPasteStopsText('');
@@ -204,13 +215,35 @@ const AdminPage = () => {
     }
   };
 
-  const updateStopTiming = (index: number, field: 'stopName' | 'arrivalTime' | 'period', value: string) => {
+  const updateStopName = (index: number, value: string) => {
     const updated = [...stopTimings];
+    updated[index].stopName = value;
+    setStopTimings(updated);
+  };
+
+  const updateStopTime = (stopIndex: number, timeIndex: number, field: 'arrivalTime' | 'period', value: string) => {
+    const updated = [...stopTimings];
+    const times = updated[stopIndex].times;
+    if (!times[timeIndex]) return;
     if (field === 'period') {
-      updated[index][field] = value as 'AM' | 'PM';
+      times[timeIndex].period = value as 'AM' | 'PM';
     } else {
-      updated[index][field] = value;
+      times[timeIndex].arrivalTime = value;
     }
+    updated[stopIndex].times = times;
+    setStopTimings(updated);
+  };
+
+  const addTimeForStop = (stopIndex: number) => {
+    const updated = [...stopTimings];
+    updated[stopIndex].times.push({ arrivalTime: '', period: 'AM' });
+    setStopTimings(updated);
+  };
+
+  const removeTimeForStop = (stopIndex: number, timeIndex: number) => {
+    const updated = [...stopTimings];
+    if (updated[stopIndex].times.length <= 1) return;
+    updated[stopIndex].times = updated[stopIndex].times.filter((_, i) => i !== timeIndex);
     setStopTimings(updated);
   };
 
@@ -218,7 +251,7 @@ const AdminPage = () => {
     e.preventDefault();
     
     // Validate that all stops have names and times
-    const hasEmptyFields = stopTimings.some(st => !st.stopName.trim() || !st.arrivalTime.trim());
+    const hasEmptyFields = stopTimings.some(st => !st.stopName.trim() || st.times.some(t => !t.arrivalTime.trim()));
     if (hasEmptyFields) {
       toast.error('Please fill all stop names and times');
       return;
@@ -226,15 +259,13 @@ const AdminPage = () => {
 
     const busData = {
       busName: busForm.busName,
+      busNumber: busForm.busNumber,
       from: busForm.from,
       via: busForm.via,
       to: busForm.to,
       type: busForm.type,
       route: stopTimings.map(st => st.stopName.trim()),
-      timings: stopTimings.map(st => ({
-        stop: st.stopName.trim(),
-        time: `${st.arrivalTime} ${st.period}`
-      }))
+      timings: stopTimings.flatMap(st => st.times.map(t => ({ stopName: st.stopName.trim(), arrivalTime: `${t.arrivalTime} ${t.period}`, departureTime: `${t.arrivalTime} ${t.period}` })))
     };
     
     console.log('Attempting to add bus with data:', busData);
@@ -244,9 +275,9 @@ const AdminPage = () => {
       const response = await api.post('/api/admin/buses', busData);
       console.log('✅ Bus added successfully:', response.data);
       toast.success('Bus added successfully!');
-      setBusForm({ busName: '', from: '', via: '', to: '', type: 'KSRTC' });
-      setStopTimings([{ stopName: '', arrivalTime: '', period: 'AM' }]);
-        setPasteStopsText('');
+      setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'KSRTC' });
+      setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
+      setPasteStopsText('');
     } catch (error: any) {
       console.error('❌ Error adding bus:', error);
       console.error('Error details:', {
@@ -334,6 +365,17 @@ const AdminPage = () => {
                   required
                 />
               </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Number</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="e.g., KL-05-AB-1234"
+                    value={busForm.busNumber}
+                    onChange={(e) => setBusForm({ ...busForm, busNumber: e.target.value })}
+                  />
+                </div>
+              
 
               {/* From → Via → To */}
               <div>
@@ -375,6 +417,8 @@ const AdminPage = () => {
                   From → Via → To (Via is optional)
                 </p>
               </div>
+
+              {/* Vehicle Number in Edit/Add */}
 
               {/* Bus Type */}
               <div>
@@ -418,51 +462,57 @@ const AdminPage = () => {
                 <div className="space-y-3">
                   {stopTimings.map((stopTiming, index) => (
                     <div key={index} className="flex gap-3 items-start">
-                      {/* Stop Name Input */}
                       <div className="flex-1">
                         <input
                           type="text"
                           className="input-field"
                           placeholder="e.g., Thiruvananthapuram Central"
                           value={stopTiming.stopName}
-                          onChange={(e) => updateStopTiming(index, 'stopName', e.target.value)}
+                          onChange={(e) => updateStopName(index, e.target.value)}
                           required
                         />
+
+                        <div className="mt-2 space-y-2">
+                          {stopTiming.times.map((t, ti) => (
+                            <div key={ti} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                className="input-field w-32"
+                                placeholder="HH:MM"
+                                value={t.arrivalTime}
+                                onChange={(e) => {
+                                  let value = e.target.value.replace(/[^0-9]/g, '');
+                                  if (value.length >= 2) {
+                                    value = value.slice(0, 2) + ':' + value.slice(2, 4);
+                                  }
+                                  updateStopTime(index, ti, 'arrivalTime', value);
+                                }}
+                                maxLength={5}
+                                required
+                              />
+                              <select
+                                className="input-field w-24"
+                                value={t.period}
+                                onChange={(e) => updateStopTime(index, ti, 'period', e.target.value)}
+                                required
+                              >
+                                <option value="AM">AM</option>
+                                <option value="PM">PM</option>
+                              </select>
+                              {stopTiming.times.length > 1 && (
+                                <button type="button" onClick={() => removeTimeForStop(index, ti)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remove time">
+                                  <X className="h-5 w-5" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+
+                          <button type="button" onClick={() => addTimeForStop(index)} className="text-sm text-primary-600">
+                            + Add time
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Time Input (12-hour format) */}
-                      <div className="w-32">
-                        <input
-                          type="text"
-                          className="input-field"
-                          placeholder="HH:MM"
-                          value={stopTiming.arrivalTime}
-                          onChange={(e) => {
-                            let value = e.target.value.replace(/[^0-9]/g, '');
-                            if (value.length >= 2) {
-                              value = value.slice(0, 2) + ':' + value.slice(2, 4);
-                            }
-                            updateStopTiming(index, 'arrivalTime', value);
-                          }}
-                          maxLength={5}
-                          required
-                        />
-                      </div>
-
-                      {/* AM/PM Selector */}
-                      <div className="w-24">
-                        <select
-                          className="input-field"
-                          value={stopTiming.period}
-                          onChange={(e) => updateStopTiming(index, 'period', e.target.value)}
-                          required
-                        >
-                          <option value="AM">AM</option>
-                          <option value="PM">PM</option>
-                        </select>
-                      </div>
-
-                      {/* Remove Button (only show if more than 1 stop) */}
                       {stopTimings.length > 1 && (
                         <button
                           type="button"
@@ -526,6 +576,16 @@ const AdminPage = () => {
                       value={busForm.busName}
                       onChange={(e) => setBusForm({ ...busForm, busName: e.target.value })}
                       required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Number</label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="e.g., KL-05-AB-1234"
+                      value={busForm.busNumber}
+                      onChange={(e) => setBusForm({ ...busForm, busNumber: e.target.value })}
                     />
                   </div>
 
@@ -615,38 +675,51 @@ const AdminPage = () => {
                               className="input-field"
                               placeholder="e.g., Thiruvananthapuram Central"
                               value={stopTiming.stopName}
-                              onChange={(e) => updateStopTiming(index, 'stopName', e.target.value)}
+                              onChange={(e) => updateStopName(index, e.target.value)}
                               required
                             />
+
+                            <div className="mt-2 space-y-2">
+                              {stopTiming.times.map((t, ti) => (
+                                <div key={ti} className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    className="input-field w-32"
+                                    placeholder="HH:MM"
+                                    value={t.arrivalTime}
+                                    onChange={(e) => {
+                                      let value = e.target.value.replace(/[^0-9]/g, '');
+                                      if (value.length >= 2) {
+                                        value = value.slice(0, 2) + ':' + value.slice(2, 4);
+                                      }
+                                      updateStopTime(index, ti, 'arrivalTime', value);
+                                    }}
+                                    maxLength={5}
+                                    required
+                                  />
+                                  <select
+                                    className="input-field w-24"
+                                    value={t.period}
+                                    onChange={(e) => updateStopTime(index, ti, 'period', e.target.value)}
+                                    required
+                                  >
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                  </select>
+                                  {stopTiming.times.length > 1 && (
+                                    <button type="button" onClick={() => removeTimeForStop(index, ti)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Remove time">
+                                      <X className="h-5 w-5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+
+                              <button type="button" onClick={() => addTimeForStop(index)} className="text-sm text-primary-600">
+                                + Add time
+                              </button>
+                            </div>
                           </div>
-                          <div className="w-32">
-                            <input
-                              type="text"
-                              className="input-field"
-                              placeholder="HH:MM"
-                              value={stopTiming.arrivalTime}
-                              onChange={(e) => {
-                                let value = e.target.value.replace(/[^0-9]/g, '');
-                                if (value.length >= 2) {
-                                  value = value.slice(0, 2) + ':' + value.slice(2, 4);
-                                }
-                                updateStopTiming(index, 'arrivalTime', value);
-                              }}
-                              maxLength={5}
-                              required
-                            />
-                          </div>
-                          <div className="w-24">
-                            <select
-                              className="input-field"
-                              value={stopTiming.period}
-                              onChange={(e) => updateStopTiming(index, 'period', e.target.value)}
-                              required
-                            >
-                              <option value="AM">AM</option>
-                              <option value="PM">PM</option>
-                            </select>
-                          </div>
+
                           {stopTimings.length > 1 && (
                             <button
                               type="button"
@@ -737,6 +810,9 @@ const AdminPage = () => {
                               <p>
                                 <span className="font-medium">Route:</span> {bus.from}
                                 {bus.via && ` → ${bus.via}`} → {bus.to}
+                              </p>
+                              <p>
+                                <span className="font-medium">Vehicle No:</span> {bus.busNumber || '—'}
                               </p>
                               <p>
                                 <span className="font-medium">Type:</span> {bus.type}
