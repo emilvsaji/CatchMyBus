@@ -318,6 +318,3 @@ For support, email info@catchmybus.com or create an issue in this repository.
 - [ ] Analytics dashboard for admins
 - [ ] Mobile apps (React Native)
 
----
-
-Made with ❤️ for Kerala's commuters
