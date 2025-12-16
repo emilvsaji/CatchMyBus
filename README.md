@@ -62,6 +62,10 @@ Before you begin, ensure you have the following installed:
 
 ## 🚀 Getting Started
 
+## 📌 Project Details
+
+For a complete overview of the architecture, tech stack, APIs, Firestore schema, and deployment notes, see `PROJECT_DETAILS.md`.
+
 ### 1. Clone the Repository
 
 ```bash
