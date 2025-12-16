@@ -20,8 +20,23 @@ const BusCard = ({ result, compact = false }: BusCardProps) => {
 
   const displayFromName = (fromTiming?.stopName) || bus.from || (Array.isArray(bus.route) && extractStopNameFromRouteItem(bus.route[0])) || 'N/A';
   const displayToName = (toTiming?.stopName) || bus.to || (Array.isArray(bus.route) && extractStopNameFromRouteItem(bus.route[bus.route.length - 1])) || 'N/A';
-  const displayFromTime = fromTiming?.departureTime || fromTiming?.arrivalTime || 'TBD';
-  const displayToTime = toTiming?.arrivalTime || toTiming?.departureTime || 'TBD';
+  const isPlaceholderTime = (s?: string) => {
+    if (!s) return true;
+    const v = String(s).trim();
+    if (!v) return true;
+    if (/^tbd$/i.test(v)) return true;
+    const norm = v.replace(/\s+/g, '').toLowerCase();
+    return /^0{1,2}(:0{2})?(am|pm)?$/.test(norm);
+  };
+
+  const sanitizeTime = (t?: string) => {
+    if (!t) return '—';
+    if (isPlaceholderTime(t)) return '—';
+    return t;
+  };
+
+  const displayFromTime = sanitizeTime(fromTiming?.departureTime || fromTiming?.arrivalTime);
+  const displayToTime = sanitizeTime(toTiming?.arrivalTime || toTiming?.departureTime);
 
   const getBusTypeColor = (type: string) => {
     switch (type) {
@@ -188,8 +203,8 @@ const BusCard = ({ result, compact = false }: BusCardProps) => {
                           </p>
                           {(isFromStop || isToStop) && bus.timings && bus.timings[idx] && (
                             <p className="text-sm text-gray-600">
-                              Arrival: {bus.timings[idx].arrivalTime || 'N/A'} | 
-                              Departure: {bus.timings[idx].departureTime || 'N/A'}
+                              Arrival: {sanitizeTime(bus.timings[idx].arrivalTime)} | 
+                              Departure: {sanitizeTime(bus.timings[idx].departureTime)}
                             </p>
                           )}
                         </div>
