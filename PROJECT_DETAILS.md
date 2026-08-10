@@ -1,6 +1,6 @@
 # 🚌 CatchMyBus — Comprehensive Project Details & Technical Documentation
 
-> **CatchMyBus** is a modern, mobile-responsive, intelligent bus timing and route information system engineered specifically for public and private bus transportation in Kerala, India.
+> **CatchMyBus** is a modern, mobile-first, intelligent bus timing and route information system engineered specifically for public (KSRTC) and private bus transportation across Kerala, India.
 
 ---
 
@@ -25,129 +25,117 @@
 ## 🎯 Project Overview & Mission
 
 ### Purpose
-CatchMyBus addresses the unpredictability of bus travel across Kerala by providing daily commuters, students, working professionals, and tourists with instant, accurate bus arrival times, intermediate stop schedules, distance calculations, fare estimations, interactive map visualizations, and saved routes.
+CatchMyBus provides daily commuters, students, working professionals, and travelers in Kerala with reliable, real-time bus schedules, departure and arrival timings, intermediate stop breakdowns, automated fare calculation, and interactive route mapping.
 
-### Target Users
-- **Daily Commuters & Office Workers:** Need dependable departure/arrival schedules to plan daily travel.
-- **Students:** Seeking affordable, frequent bus routes between colleges and transit hubs.
-- **Tourists & Long-Distance Travelers:** Requiring clear route paths, intermediate stop breakdowns, and fare estimates.
-- **Transit Administrators & Depot Managers:** Managing bus schedules, stops, timings, and passenger feedback.
+### Key Value Pillars
+- **Transit-Board Interface:** High-density, professional transit board presentation focusing on readability, tabular alignment, and clean visual hierarchy.
+- **Mobile-First Experience:** Built with a strict 375px+ responsive grid, touch-friendly hit areas ($\ge 44\text{px}$), sticky filter bars, and minimal scrolling friction.
+- **Accurate Timing & Fare Engine:** Smart multi-criteria matching algorithm with automated fare approximation and distance calculations.
 
 ---
 
 ## 🎨 Design System, Colors & Visual Aesthetics
 
-The user interface is built on modern visual design principles with rich micro-animations, glassmorphism, responsive grid layouts, card elevations, and custom 3D canvas simulations.
+The application uses a **professional transit design system** anchored in deep transit navy and signal amber, avoiding childish saturated colors in favor of desaturated badges, tabular figures, and border-based elevations.
 
-### 1. Complete Color Palette & Hex Tokens
+### 1. Color Palette & Hex Tokens
 
-#### **Primary Color Palette (Sky Blue — Trust, Reliability, Transit)**
+#### **Primary Brand Anchor (Deep Transit Navy)**
 | Token | Hex Code | RGB | Typical Usage |
 |---|---|---|---|
-| `primary-50` | `#f0f9ff` | `rgb(240, 249, 255)` | Page section backgrounds, light hover tints |
-| `primary-100` | `#e0f2fe` | `rgb(224, 242, 254)` | 3D Bus window mesh, soft highlight pills |
-| `primary-200` | `#bae6fd` | `rgb(186, 230, 253)` | Focus outline rings (`focus:ring-primary-200`) |
-| `primary-300` | `#7dd3fc` | `rgb(125, 211, 252)` | Subtle borders and decorative accents |
-| `primary-400` | `#38bdf8` | `rgb(56, 189, 248)` | Intermediate glow highlights |
-| `primary-500` | `#0ea5e9` | `rgb(14, 165, 233)` | Active states, input border focus |
-| `primary-600` | `#0284c7` | `rgb(2, 132, 199)` | **Main Brand Primary Color**, buttons, icons, navbar elements |
-| `primary-700` | `#0369a1` | `rgb(3, 105, 161)` | Button hover states (`hover:bg-primary-700`) |
-| `primary-800` | `#075985` | `rgb(7, 89, 133)` | Dark high-contrast primary text |
-| `primary-900` | `#0c4a6e` | `rgb(12, 74, 110)` | Hero sub-headers and dark text accents |
+| `navy-50` | `#EBF0F7` | `rgb(235, 240, 247)` | Light section tint, subtle container fill |
+| `navy-100` | `#C8D6E9` | `rgb(200, 214, 233)` | Subtle borders, light chip backgrounds |
+| `navy-200` | `#A2B9D8` | `rgb(162, 185, 216)` | Inactive indicator states |
+| `navy-300` | `#7B9CC7` | `rgb(123, 156, 199)` | Secondary navbar text & labels |
+| `navy-400` | `#5881B4` | `rgb(88, 129, 180)` | Accent borders & secondary highlights |
+| `navy-500` | `#3A66A0` | `rgb(58, 102, 160)` | Intermediate active elements |
+| `navy-600` | `#214F8C` | `rgb(33, 79, 140)` | Interactive focus states |
+| `navy-700` | `#0F3B78` | `rgb(15, 59, 120)` | Button hover states (`.btn-navy:hover`) |
+| `navy-800` | `#0B2545` | `rgb(11, 37, 69)` | **Main Brand Anchor**: Navbar, hero band, sticky filter bar, polyline |
+| `navy-900` | `#071730` | `rgb(7, 23, 48)` | Navbar bottom border, footer background |
 
-#### **Accent Color Palette (Kerala Orange / Amber — Energy, Action, KSRTC Identity)**
+#### **Accent Brand Color (Signal Amber — Used Sparingly)**
 | Token | Hex Code | RGB | Typical Usage |
 |---|---|---|---|
-| `accent-50` | `#fff7ed` | `rgb(255, 247, 237)` | Feature card gradient highlights |
-| `accent-100` | `#ffedd5` | `rgb(255, 237, 213)` | Info cards & subtle warning panels |
-| `accent-200` | `#fed7aa` | `rgb(254, 215, 170)` | Secondary button border tints |
-| `accent-300` | `#fdba74` | `rgb(253, 186, 116)` | Warm accent badges |
-| `accent-400` | `#fb923c` | `rgb(251, 146, 60)` | Highlights & notification counters |
-| `accent-500` | `#f97316` | `rgb(249, 115, 22)` | **Main Accent Color**, Admin action badges, CTA buttons |
-| `accent-600` | `#ea580c` | `rgb(234, 88, 12)` | Admin hover states (`hover:bg-accent-600`) |
-| `accent-700` | `#c2410c` | `rgb(194, 65, 12)` | Deep orange alert text |
-| `accent-800` | `#9a3412` | `rgb(154, 52, 18)` | High-contrast accent labels |
-| `accent-900` | `#7c2d12` | `rgb(124, 45, 18)` | Dark footer accent text |
+| `amber-50` | `#FEF8EC` | `rgb(254, 248, 236)` | Notice box light background |
+| `amber-100` | `#FDEDC9` | `rgb(253, 237, 201)` | Warning container background |
+| `amber-200` | `#FBD98B` | `rgb(251, 217, 139)` | Notice border tint |
+| `amber-300` | `#F9C54E` | `rgb(249, 197, 78)` | Button hover state (`.btn-amber:hover`) |
+| `amber-400` | `#F5A623` | `rgb(245, 166, 35)` | **Main Accent CTA**: Buttons, active filter chips, live dots, logo icon |
+| `amber-500` | `#D98C0E` | `rgb(217, 140, 14)` | Button active press state (`.btn-amber:active`) |
+| `amber-600` | `#B27209` | `rgb(178, 114, 9)` | High-contrast amber labels |
+| `amber-700` | `#8A5706` | `rgb(138, 87, 6)` | Deep amber notice text |
 
-#### **Bus Type Badge Colors**
-| Bus Type | Background Class | Hex Background | Text Class | Hex Text | Description |
-|---|---|---|---|---|---|
-| **KSRTC** | `bg-blue-100` | `#dbeafe` | `text-blue-800` | `#1e40af` | Official state transport blue badge |
-| **Private** | `bg-purple-100` | `#f3e8ff` | `text-purple-800` | `#6b21a8` | Private operator purple badge |
-| **Fast Passenger** | `bg-green-100` | `#dcfce7` | `text-green-800` | `#166534` | Green limited-stop service badge |
-| **Super Fast** | `bg-red-100` | `#fee2e2` | `text-red-800` | `#991b1b` | Red express non-stop/limited badge |
-| **Ordinary** | `bg-gray-100` | `#f3f4f6` | `text-gray-800` | `#1f2937` | Neutral gray city/local service badge |
+#### **Neutral & Background Scale**
+| Token | Hex Code | RGB | Typical Usage |
+|---|---|---|---|
+| `neutral-50` | `#F7F8FA` | `rgb(247, 248, 250)` | **App Page Background**, input field background |
+| `neutral-100` | `#ECEEF2` | `rgb(236, 238, 242)` | Hairline dividers, accordion borders |
+| `neutral-200` | `#E2E6EA` | `rgb(226, 230, 234)` | **Card Borders**, input borders, dropdown borders |
+| `neutral-300` | `#C8CDD5` | `rgb(200, 205, 213)` | Disabled icons, placeholder stop dots |
+| `neutral-400` | `#9AA3AF` | `rgb(154, 163, 175)` | Sub-labels, distance text, uppercase labels |
+| `neutral-500` | `#6B7585` | `rgb(107, 117, 133)` | Secondary body copy, stop names |
+| `neutral-600` | `#4A5568` | `rgb(74, 85, 104)` | Intermediate text, filter labels |
+| `neutral-700` | `#3A4455` | `rgb(58, 68, 85)` | High-contrast secondary headings |
+| `neutral-800` | `#1E2530` | `rgb(30, 37, 48)` | **Primary Text (Slate-Gray)**, card titles, fares |
+| `neutral-900` | `#111620` | `rgb(17, 22, 32)` | Maximum contrast titles |
 
-#### **Functional, Status & Animation Colors**
-| Purpose | Class / Hex | Value |
+#### **Muted Bus-Type Badge Palette (Desaturated Letterpress Style)**
+| Bus Type | Background Hex | Text Hex | Style Class |
+|---|---|---|---|
+| **KSRTC** | `#EBF1F7` | `#2E5A8A` | `.badge-ksrtc` |
+| **Private** | `#EEE9F7` | `#5B3A8A` | `.badge-private` |
+| **Fast Passenger** | `#E8F5EE` | `#24643C` | `.badge-fast` |
+| **Super Fast** | `#FBE9E9` | `#8A2E2E` | `.badge-superfast` |
+| **Ordinary** | `#F0F1F3` | `#4A5568` | `.badge-ordinary` |
+
+#### **Status & Pin Markers**
+| Purpose | Hex Code | Visual Description |
 |---|---|---|
-| **Origin Stop Pin** | `text-green-600` | `#16a34a` |
-| **Origin Pin (3D canvas)** | `THREE.MeshBasicMaterial` | `0x22c55e` (`#22c55e`) |
-| **Destination Stop Pin** | `text-red-600` | `#dc2626` |
-| **Destination Pin (3D canvas)**| `THREE.MeshBasicMaterial` | `0xef4444` (`#ef4444`) |
-| **Estimated Fare Display** | `text-green-600` | `#16a34a` / Bold INR currency formatting |
-| **Estimated Timing Pill** | `bg-yellow-50`, `text-yellow-800` | `#fefce8` bg, `#854d0e` text |
-| **Partial Match Banner** | `bg-yellow-100`, `border-yellow-500` | `#fef9c3` bg, `#eab308` border |
-| **Favorite Route Heart** | `text-red-500` | `#ef4444` |
-| **3D Bus Mesh Body** | `THREE.MeshBasicMaterial` | `0x2563eb` (`#2563eb`) |
-| **3D Bus Wheels** | `THREE.MeshBasicMaterial` | `0x111827` (`#111827`) |
-| **3D Bus Glow Aura** | `THREE.MeshBasicMaterial` | `0x60a5fa` (`#60a5fa`, opacity: 0.25) |
-| **3D Track Line** | `THREE.MeshBasicMaterial` | `0xd1d5db` (light mode), `0x5eead4` (dark mode) |
-| **3D Canvas Light Background** | `THREE.MeshBasicMaterial` | `0xf8fafc` (`#f8fafc`) |
-| **3D Canvas Dark Background** | `THREE.MeshBasicMaterial` | `0x0b1020` (`#0b1020`) |
-| **Fallback Animation Track** | `linear-gradient(90deg, #e5e7eb, #d1d5db)` | CSS fallback track gradient |
+| **Origin Stop Pin** | `#1B7F4C` | Deep green SVG pin & route progress start dot |
+| **Destination Stop Pin** | `#B3261E` | Deep red SVG pin & route progress end dot |
+| **Intermediate Stop Marker** | `#0B2545` | White circular badge with navy border & stop number |
+| **Partial Match Notice** | `#F5A623` | Amber-400 2px left border on `#F5A623`/10 background |
+| **Live Status Dot** | `#F5A623` | 6px amber dot (`.live-dot`) |
 
 ---
 
-### 2. Typography & Font System
-- **Primary Typeface:** `'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
-- **Google Fonts Import:** `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');`
-- **Typography Scale:**
-  - `Hero Heading`: 48px – 60px (`text-4xl md:text-5xl font-bold tracking-tight`)
-  - `Section Titles`: 24px – 30px (`text-2xl md:text-3xl font-bold text-gray-800`)
-  - `Card Titles`: 20px (`text-xl font-bold text-gray-800`)
-  - `Body / Descriptions`: 16px (`text-base text-gray-600 leading-relaxed`)
-  - `Data Labels & Timings`: 18px (`text-lg font-bold text-gray-900`)
-  - `Micro-badges & Tooltips`: 12px (`text-xs font-semibold uppercase tracking-wider`)
+### 2. Typography & Tabular Numerals
+- **Primary Font Family:** `'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
+- **Monospace Font Family:** `'JetBrains Mono', 'Fira Code', 'Consolas', monospace` (used for bus registration numbers)
+- **Tabular Figures:** `font-variant-numeric: tabular-nums;` is applied across all timing, fare, distance, and duration data to ensure strict character alignment like transit departure boards.
 
 ---
 
 ### 3. Keyframe Animations & Micro-Interactions
-
+Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-preference)` to respect accessibility:
 ```css
-/* Fade In */
 @keyframes fadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* Slide Up */
 @keyframes slideUp {
-  0% { transform: translateY(10px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Floating Bus */
-@keyframes busMove {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(30px); }
-}
-
-/* Horizontal Fallback Bus Simulation */
-@keyframes busMoveX {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(calc(100% - 24px)); }
-  100% { transform: translateX(0); }
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 ```
 
 ### 4. Custom Reusable Utility Classes (`index.css`)
-- `.btn-primary`: `bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg`
-- `.btn-secondary`: `bg-white text-primary-600 px-6 py-3 rounded-lg font-medium border-2 border-primary-600 hover:bg-primary-50 transition-colors duration-200`
-- `.input-field`: `w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-200`
-- `.card`: `bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300`
-- `.section-title`: `text-2xl md:text-3xl font-bold text-gray-800 mb-4`
-- `.leaflet-container`: `rounded-lg shadow-md w-full h-full min-h-[400px]`
+- `.btn-amber`: Signal amber primary CTA (`bg-amber-400 text-navy-800 font-semibold px-5 py-2.5 rounded-lg hover:bg-amber-300 min-h-[44px]`)
+- `.btn-navy`: Navy secondary button (`bg-navy-800 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-navy-700 min-h-[44px]`)
+- `.btn-ghost`: Outline ghost button (`border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-100 min-h-[44px]`)
+- `.transit-card`: Border-based card container (`bg-white rounded-lg border border-neutral-200 shadow-transit`)
+- `.transit-row`: Transit-board result item (`bg-white border border-neutral-200 hover:border-neutral-300 shadow-transit`)
+- `.input-field`: Off-white input with navy focus ring (`bg-neutral-50 border border-neutral-200 focus:border-navy-800 focus:ring-2 focus:ring-navy-800/15 min-h-[44px]`)
+- `.route-progress`: Segmented flat route line with origin dot, dashed line, via stop label, and destination dot
+- `.sticky-filter-bar`: Sticky sub-navbar (`sticky top-[56px] z-30 bg-navy-800 border-b border-navy-900`)
+- `.map-muted`: Map tile filter (`filter: saturate(0.82) brightness(1.03)`)
 
 ---
 
@@ -158,35 +146,34 @@ The user interface is built on modern visual design principles with rich micro-a
 |---|---|---|
 | **React** | `18.2.0` | UI Component Framework |
 | **TypeScript** | `5.2.2` | Static type safety and data modeling |
-| **Vite** | `5.0.8` | Next-generation frontend build tool and dev server |
-| **Tailwind CSS** | `3.3.6` | Utility-first styling framework |
-| **React Router DOM**| `6.20.1` | Client-side routing and deep-linking |
-| **Leaflet & React Leaflet** | `1.9.4` / `4.2.1` | Interactive map tiles and route polyline rendering |
-| **Three.js** | `0.159.0` | 3D WebGL real-time animated bus progress simulation |
-| **Lucide React** | `0.294.0` | Clean, lightweight SVG iconography |
-| **React Hot Toast** | `2.4.1` | Responsive toast notifications for user interactions |
-| **Axios** | `1.6.2` | Promise-based HTTP client |
-| **Firebase Client SDK** | `10.7.1` | Firebase Authentication (Email/Password) |
-| **Date-fns** | `3.0.0` | Date and time formatting helpers |
+| **Vite** | `5.4.21` | High-speed frontend bundler & dev server |
+| **Tailwind CSS** | `3.3.6` | Utility-first styling with custom transit design tokens |
+| **React Router DOM**| `6.20.1` | Client-side routing (`/`, `/search`, `/admin`, `/debug`) |
+| **Leaflet & React Leaflet** | `1.9.4` / `4.2.1` | Interactive map tiles with custom SVG markers & polylines |
+| **Lucide React** | `0.294.0` | Clean, lightweight transit iconography |
+| **React Hot Toast** | `2.4.1` | User notification toasts for bookmarks, auth, and feedback |
+| **Axios** | `1.6.2` | Promise-based REST client with baseURL config |
+| **Firebase Client SDK** | `10.7.1` | Firebase Authentication (Email/Password & Admin detection) |
+| **Date-fns** | `3.0.0` | Date and time utilities |
 
 ### Backend
 | Technology | Version | Purpose |
 |---|---|---|
 | **Node.js** | `v18+` / `v20+` | JavaScript runtime environment |
-| **TypeScript** | `5.3.3` | Backend type definitions and transpilation |
-| **Express** | `4.18.2` | RESTful API server |
-| **Firebase Admin SDK** | `12.0.0` | Secure server-side Firestore database read/write access |
-| **CORS** | `2.8.5` | Cross-Origin Resource Sharing middleware with multi-domain whitelist |
+| **TypeScript** | `5.3.3` | Transpiled server-side code |
+| **Express** | `4.18.2` | RESTful API routing and middleware |
+| **Firebase Admin SDK** | `12.0.0` | Server-side Firestore access |
+| **CORS** | `2.8.5` | Cross-Origin Resource Sharing with multi-domain whitelist |
 | **Dotenv** | `16.3.1` | Environment variable management |
-| **Axios** | `1.13.2` | Geocoding API communication (OpenStreetMap Nominatim) |
-| **Express Validator** | `7.0.1` | Request schema validation |
-| **Nodemon & ts-node** | `3.0.2` / `10.9.2` | Hot-reloading development server |
+| **Axios** | `1.13.2` | OpenStreetMap Nominatim geocoding integration |
+| **Express Validator** | `7.0.1` | Request body validation |
+| **Nodemon & ts-node** | `3.0.2` / `10.9.2` | Development hot-reload |
 
-### Cloud Database & Infrastructure
+### Cloud Database & Hosting
 | Service | Role |
 |---|---|
-| **Google Cloud Firestore** | NoSQL document database for buses, stops, favorites, and feedback |
-| **Firebase Authentication** | User identity & Admin role detection |
+| **Google Cloud Firestore** | NoSQL document database (`buses`, `stops`, `favorites`, `feedback`) |
+| **Firebase Authentication** | User credentials & administrative role checking |
 | **Render** | Node.js web service production deployment (`render.yaml`) |
 | **Vercel** | SPA frontend hosting with edge rewrite rules (`vercel.json`) |
 | **OpenStreetMap Nominatim** | Real-time geocoding and reverse geocoding API |
@@ -198,10 +185,10 @@ The user interface is built on modern visual design principles with rich micro-a
 ```
 +-----------------------------------------------------------------------------------+
 |                                  USER BROWSER                                     |
-|  [HomePage / SearchResults / FavoritesPage / AboutPage / AdminPage]               |
+|  [HomePage / SearchResults / AdminPage / DebugPage]                               |
 |                                                                                   |
-|  • Three.js Canvas Animation     • React Leaflet Map       • Autocomplete Inputs  |
-|  • Firebase Client Auth          • Axios HTTP Client       • Tailwind UI Tokens   |
+|  • Transit-Board Cards           • Segmented Route Progress   • Autocomplete      |
+|  • React Leaflet (Custom Pins)   • Tabular-Nums Formatting    • Firebase Auth     |
 +----------------------------------------+------------------------------------------+
                                          |
                                          | HTTP / JSON (REST)
@@ -218,7 +205,7 @@ The user interface is built on modern visual design principles with rich micro-a
 |  ├── /api/buses/stops         (Autocomplete & spatial stops retrieval)            |
 |  ├── /api/admin/buses         (CRUD operations for bus routes & timings)          |
 |  ├── /api/admin/stops         (Bus stop location registration)                    |
-|  ├── /api/favorites           (User favorite routes storage)                      |
+|  ├── /api/favorites           (Inline route bookmarking endpoint)                 |
 |  ├── /api/feedback            (Commuter reporting & admin review)                 |
 |  └── /health                  (Uptime heartbeat monitoring)                       |
 +----------------------------------------+------------------------------------------+
@@ -240,79 +227,84 @@ The user interface is built on modern visual design principles with rich micro-a
 
 ## 💻 Frontend Architecture & Component Reference
 
-### 1. Root Structure
+### 1. Directory Structure
 ```
 frontend/
 ├── src/
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── Header.tsx           # Sticky top navigation with Auth modal & Admin badge
-│   │   │   └── Footer.tsx           # Application footer with quick links & info
-│   │   ├── AutocompleteInput.tsx    # Debounced stop name search with dropdown suggestions
-│   │   ├── BusCard.tsx              # Rich bus card with timings, fares, badges, 3D animation
-│   │   ├── BusProgress.tsx          # Three.js 3D bus on track with WebGL / CSS fallback
+│   │   │   ├── Header.tsx           # 56px sticky navy navbar with logo + auth button
+│   │   │   └── Footer.tsx           # Compact navy footer with brand, contact & copyright
+│   │   ├── AutocompleteInput.tsx    # Accessible stop input with keyboard navigation (↑↓ Enter Esc)
+│   │   ├── BusCard.tsx              # Transit-board row card with flat segmented route & inline bookmark
 │   │   ├── LoginModal.tsx           # Firebase Auth popup for login/registration
 │   │   ├── ProtectedRoute.tsx       # Route guard redirecting non-admins
-│   │   └── RouteMap.tsx             # Interactive Leaflet map with Kerala coordinates
+│   │   └── RouteMap.tsx             # React Leaflet map with custom SVG pins & muted tiles
 │   ├── config/
 │   │   ├── api.ts                   # Axios instance with VITE_API_URL baseURL
 │   │   └── firebase.ts              # Firebase client app initialization
 │   ├── contexts/
 │   │   └── AuthContext.tsx          # Auth provider tracking currentUser & isAdmin status
 │   ├── pages/
-│   │   ├── AboutPage.tsx            # Mission, features overview, upcoming roadmap
 │   │   ├── AdminPage.tsx            # Full-featured Bus & Stop CRUD management
 │   │   ├── DebugPage.tsx            # Diagnostic utility for API connectivity
-│   │   ├── FavoritesPage.tsx        # Saved user routes with 1-click re-search
-│   │   ├── HomePage.tsx             # Search form, live inline results, hero & stats
-│   │   └── SearchResults.tsx        # Deep-linked search results with map view toggle
+│   │   ├── HomePage.tsx             # Navy hero, overlapping search card, 3-feature strip, inline results
+│   │   └── SearchResults.tsx        # Sticky filter bar, responsive 1-col to 2-col results grid, map toggle
 │   ├── types/
 │   │   └── index.ts                 # Central TypeScript interfaces
-│   ├── App.tsx                      # React Router configuration
+│   ├── App.tsx                      # Clean React Router config (no dead routes)
 │   ├── main.tsx                     # React DOM root render with Toaster
-│   └── index.css                    # Tailwind directives, keyframes, component classes
+│   └── index.css                    # Design tokens, component classes, tabular-nums utilities
 ├── public/                          # Static assets
 ├── index.html                       # HTML5 entry with Inter font
-├── tailwind.config.js               # Theme extensions, colors, animations
+├── tailwind.config.js               # Transit navy + signal amber design tokens
 ├── tsconfig.json                    # TypeScript compiler configuration
 ├── vercel.json                      # Vercel SPA routing rewrite rules
-└── vite.config.ts                   # Vite configuration (port 3000 default)
+└── vite.config.ts                   # Vite configuration
 ```
 
 ### 2. Component Highlights
 
-#### `BusCard.tsx`
-- **Badges:** Displays colored tags for bus type (`KSRTC`, `Private`, `Fast`, `Super Fast`, `Ordinary`).
-- **Timing Display:** Shows sanitized departure and arrival timings. Displays an `Estimated times` yellow badge when timings are computed dynamically.
-- **Partial Match Warning:** Displays an alert banner if a bus passes through only one of the searched stops.
-- **Route Expand/Collapse:** Reveals an interactive vertical timeline showing all intermediate stops with arrival/departure times.
-- **3D Animated Bus:** Mounts the `BusProgress` component directly inside the card.
+#### `Header.tsx`
+- **Slim Sticky Bar:** 56px height (`h-14`), deep navy `#0B2545` background with hairline bottom border.
+- **Logo:** Amber bus icon block + bold white wordmark with subtle "Kerala" badge.
+- **Single Auth Button:** Amber "Log in" button when signed out; user avatar circle with dropdown menu (Admin link + Sign out) when signed in.
+- **No Hamburger Menu:** Kept clean without mobile collapse since there are no redundant top-level links.
 
-#### `BusProgress.tsx`
-- Initializes a Three.js `OrthographicCamera`, `WebGLRenderer`, and `Scene`.
-- Builds a 3D geometry track, green start pin, red destination pin, blue bus body (`BoxGeometry`), white windows (`PlaneGeometry`), rotating wheels (`CircleGeometry`), and an ambient blue glow aura (`0x60a5fa`).
-- Gracefully falls back to a lightweight CSS `@keyframes busMoveX` track if WebGL is unsupported or disabled.
+#### `BusCard.tsx`
+- **Transit-Board Row Layout:** Dense horizontal format with `shadow-transit` border elevation.
+- **Left Column:** Desaturated bus-type badge (`.badge-ksrtc`, `.badge-private`, etc.) + bus registration number in monospace font.
+- **Center Column:** Bus name, flat segmented route progress line (`SegmentedRoute` component with origin dot, dashed line, via stop label, and destination dot), stop names, departure $\rightarrow$ arrival in `tabular-nums`, and duration.
+- **Right Column:** Large bold fare in INR (`₹`) + total distance in km.
+- **Inline Bookmark Button:** Bookmark icon in top right that saves the route directly via `POST /api/favorites` with toast feedback (no separate page required).
+- **Accordion Timeline:** Clean hairline top border revealing vertical stop timeline with start/destination indicator dots and scheduled times.
+- **Inline Notices:** Partial-match notice with amber left border; estimated times notice in neutral gray.
 
 #### `RouteMap.tsx`
-- Built on `react-leaflet`.
-- Contains built-in coordinates for 20+ Kerala transit locations:
-  - *Major Cities:* Thiruvananthapuram (`8.5241, 76.9366`), Kochi (`9.9312, 76.2673`), Kozhikode (`11.2588, 75.7804`), Thrissur (`10.5276, 76.2144`), Kannur (`11.8745, 75.3704`), Kollam (`8.8932, 76.6141`), Palakkad (`10.7867, 76.6548`), Alappuzha (`9.4981, 76.3388`), Kottayam (`9.5916, 76.5222`), Malappuram (`11.0510, 76.0711`).
-  - *Towns & Hubs:* Pala, Erattupetta, Ettumanoor, Pravithanam, Ponkunnam, Changanassery, Tiruvalla, Thalassery, Kasaragod, Wayanad, Attingal, Varkala, Neyyattinkara, Perumbavoor, Muvattupuzha, Kothamangalam, Angamaly, Aluva.
-- Connects stops with smooth blue polyline routes on OpenStreetMap tiles.
+- **Custom SVG Markers:** Origin pin in deep green (`#1B7F4C`), Destination pin in deep red (`#B3261E`), numbered stop badges in white with navy border (`#0B2545`).
+- **Muted Tile Styling:** CSS filter `.map-muted` (`saturate(0.82) brightness(1.03)`) for a clean, non-distracting map aesthetic.
+- **Navy Route Polyline:** `#0B2545` dash-array line connecting all intermediate stops.
+- **Synchronous Coordinates Lookup:** Fast dictionary lookup covering 30+ Kerala transit locations.
 
-#### `AdminPage.tsx`
-- **Tab 1: Manage Buses:**
-  - Add new bus form with Bus Name, Bus Number, Origin, Via, Destination, Bus Type.
-  - Multi-stop timing creator with dynamic `AM`/`PM` toggle buttons.
-  - **Smart Paste:** Allows pasting multiline stop schedules with auto-delimiter parsing (`-`, `,`, `|`, `\t`).
-  - Search filter to quickly locate existing buses.
-  - Full edit and delete capabilities.
-- **Tab 2: Manage Stops:**
-  - Register new bus stops with Stop Name, District, Latitude, and Longitude.
+#### `AutocompleteInput.tsx`
+- **Full Keyboard Accessibility:** Supports `ArrowDown`, `ArrowUp`, `Enter`, and `Escape` keys.
+- **ARIA Attributes:** `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded`, and `aria-activedescendant`.
+- **Navy Active Selection:** Selected dropdown item highlighted with navy `#0B2545` background and white text.
 
-#### `AuthContext.tsx`
-- Synchronizes with Firebase Authentication.
-- Checks if the authenticated user's email matches the configured admin email (`admin@catchmybus.com`) and updates `isAdmin` state.
+#### `HomePage.tsx`
+- **Navy Hero Band:** Deep navy `#0B2545` background with amber accent heading.
+- **Overlapping Search Card:** Elevated card positioned over the hero border with inputs for From, To, Departure Time, Bus Type, and "Show all buses" checkbox.
+- **Inline Results Preview:** Shows up to 3 matching bus cards directly on the home view with a "View all $\rightarrow$" action.
+- **Compact 3-Feature Strip:** Plain, fluff-free feature highlights:
+  1. *Arrival times* — See departure and arrival times for any route.
+  2. *Route on map* — View the full route with intermediate stops on a live map.
+  3. *Save routes* — Bookmark any result directly from the card.
+
+#### `SearchResults.tsx`
+- **Sticky Filter Bar:** Sticky bar under the navbar with horizontal scrolling bus-type chips (`All types`, `KSRTC`, `Private`, `Fast`, `Super Fast`, `Ordinary`) and clear filter action.
+- **Map View Toggle:** Shows/hides `RouteMap` with active button state.
+- **Responsive Results Grid:** 1 column on mobile, 2 columns on tablet and desktop (`grid-cols-1 md:grid-cols-2`).
+- **Clean Empty State:** Minimal no-results card with "New search" button.
 
 ---
 
@@ -343,7 +335,7 @@ backend/
 #### **Bus Routes (`/api/buses`)**
 | Method | Endpoint | Query / Body Parameters | Response Format | Description |
 |---|---|---|---|---|
-| `GET` | `/api/buses/search` | `from` (string, req)<br>`to` (string, req)<br>`type` (string, opt)<br>`time` (string, opt: `08:30 AM` / `14:30`)<br>`showAll` (boolean, opt) | `{ success: true, count: number, data: BusResult[] }` | Smart search engine matching origin, destination, intermediate routes, timing availability, distance and fare calculation. |
+| `GET` | `/api/buses/search` | `from` (string, req)<br>`to` (string, req)<br>`type` (string, opt)<br>`time` (string, opt: `08:30 AM` / `14:30`)<br>`showAll` (boolean, opt) | `{ success: true, count: number, data: BusResult[] }` | Search engine matching origin, destination, intermediate routes, timing availability, distance and fare calculation. |
 | `GET` | `/api/buses/stops` | None | `{ success: true, count: number, data: BusStop[] }` | Returns all registered bus stops for autocomplete. |
 | `GET` | `/api/buses/stops/nearby` | `lat` (number)<br>`lng` (number)<br>`radius` (number, default: 5km) | `{ success: true, count: number, data: BusStop[] }` | Spatial lookup of nearby bus stops within radius using Haversine calculation. |
 
@@ -361,7 +353,7 @@ backend/
 | Method | Endpoint | Payload / Params | Description |
 |---|---|---|---|
 | `GET` | `/api/favorites` | None | Retrieves saved routes for the user. |
-| `POST` | `/api/favorites` | `{ fromStop: string, toStop: string }` | Saves a route to user's favorites. |
+| `POST` | `/api/favorites` | `{ fromStop: string, toStop: string }` | Saves a route to user's favorites (triggered via inline card bookmark). |
 | `DELETE` | `/api/favorites/:id` | `:id` path parameter | Removes a saved route. |
 
 #### **Feedback & Reporting Routes (`/api/feedback`)**
@@ -457,7 +449,7 @@ service cloud.firestore {
     
     // Favorites - authenticated user access
     match /favorites/{favoriteId} {
-      allow read, create, delete: if true; // Restrict to request.auth.uid in production
+      allow read, create, delete: if true;
     }
     
     // Feedback - public create, admin read/update
@@ -579,7 +571,7 @@ cd ..
 cd backend
 npm run dev
 
-# Terminal 2: Frontend (Port 3000 / 5173)
+# Terminal 2: Frontend (Port 5173 / 3000)
 cd frontend
 npm run dev
 ```
@@ -617,13 +609,13 @@ Use the Admin Panel (`/admin`) or import `sample-data.js` to seed the database w
 ## 🔧 Troubleshooting & Gotchas
 
 1. **CORS Blocked Errors:**
-   - Ensure the frontend URL in `backend/.env` under `FRONTEND_URL` exactly matches your browser's protocol, host, and port (e.g. `http://localhost:3000` or `http://localhost:5173` without trailing slashes).
+   - Ensure the frontend URL in `backend/.env` under `FRONTEND_URL` exactly matches your browser's protocol, host, and port (e.g. `http://localhost:5173` or `http://localhost:3000` without trailing slashes).
 2. **Firebase Private Key Newline Escapes:**
    - In `.env` or Render environment settings, ensure the private key contains literal `\n` or properly formatted multi-line RSA PEM strings: `"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"`.
 3. **Port In Use (EADDRINUSE):**
-   - If port `5000` or `3000` is busy, configure alternative ports in `backend/.env` (`PORT=5001`) and update `frontend/vite.config.ts` (`server: { port: 3001 }`).
-4. **Leaflet Marker Icons Missing in Production Build:**
-   - Handled via explicit icon instantiation in `RouteMap.tsx` with standard Leaflet marker icon URLs (`marker-icon.png` and `marker-shadow.png`).
+   - If port `5000` or `5173` is busy, configure alternative ports in `backend/.env` (`PORT=5001`) and `frontend/vite.config.ts`.
+4. **Leaflet Custom Marker Alignment:**
+   - SVG markers use `iconAnchor: [14, 36]` and `popupAnchor: [0, -36]` to pin the tip directly to the stop's geographic coordinates.
 
 ---
 

@@ -153,7 +153,11 @@ const BusCard = ({ result }: BusCardProps) => {
 
         {/* Center: route + times */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-neutral-800 leading-tight truncate mb-1.5">
+          {/* Bus name — full uppercase, transit-board style */}
+          <p
+            className="text-sm font-semibold text-neutral-800 leading-tight truncate mb-1.5 tracking-wide"
+            style={{ textTransform: 'uppercase' }}
+          >
             {bus.busName}
           </p>
 
@@ -170,20 +174,42 @@ const BusCard = ({ result }: BusCardProps) => {
             </span>
           </div>
 
-          {/* Departure → arrival */}
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-base font-bold tabular-nums text-neutral-800">
-              {departureTime}
-            </span>
-            <span className="text-neutral-300 text-sm" aria-hidden="true">→</span>
-            <span className="text-base font-bold tabular-nums text-neutral-800">
-              {arrivalTime}
-            </span>
-            {estimatedTime != null && (
-              <span className="text-xs text-neutral-400 ml-1">
-                {estimatedTime} min
-              </span>
-            )}
+          {/* Stacked DEPARTS / duration / ARRIVES block */}
+          <div className="mt-3 flex items-stretch gap-0">
+
+            {/* DEPARTS */}
+            <div className="flex-1 min-w-0">
+              <p className="section-label text-neutral-400 mb-0.5">Departs</p>
+              <p className="text-base font-bold tabular-nums text-neutral-800 leading-none">
+                {departureTime}
+              </p>
+              <p className="text-xs text-neutral-500 mt-0.5 truncate">{displayFromName}</p>
+            </div>
+
+            {/* Duration connector */}
+            <div className="flex flex-col items-center justify-center px-2 flex-shrink-0">
+              <div className="w-px flex-1 bg-neutral-200" aria-hidden="true" />
+              {estimatedTime != null ? (
+                <span className="my-1 text-2xs tabular-nums text-neutral-400 whitespace-nowrap">
+                  {estimatedTime >= 60
+                    ? `${Math.floor(estimatedTime / 60)}h ${estimatedTime % 60}m`
+                    : `${estimatedTime}m`
+                  }
+                </span>
+              ) : (
+                <span className="my-1 text-neutral-300 text-xs" aria-hidden="true">↓</span>
+              )}
+              <div className="w-px flex-1 bg-neutral-200" aria-hidden="true" />
+            </div>
+
+            {/* ARRIVES */}
+            <div className="flex-1 min-w-0 text-right">
+              <p className="section-label text-neutral-400 mb-0.5">Arrives</p>
+              <p className="text-base font-bold tabular-nums text-neutral-800 leading-none">
+                {arrivalTime}
+              </p>
+              <p className="text-xs text-neutral-500 mt-0.5 truncate">{displayToName}</p>
+            </div>
           </div>
         </div>
 
@@ -284,7 +310,12 @@ const BusCard = ({ result }: BusCardProps) => {
                           {isToStop   && !isLast  && <span className="ml-1 text-2xs text-neutral-400 font-normal">(your to)</span>}
                         </p>
                         {timeStr !== '—' && (
-                          <p className="text-xs tabular-nums text-neutral-400 mt-0.5">{timeStr}</p>
+                          <p className="text-xs tabular-nums text-neutral-400 mt-0.5">
+                            <span className="section-label text-neutral-300 mr-1">
+                              {isFromStop ? 'Dep' : 'Arr'}
+                            </span>
+                            {timeStr}
+                          </p>
                         )}
                       </div>
                     </li>

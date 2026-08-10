@@ -40,25 +40,10 @@ const Header = () => {
             <span className="text-white font-bold text-base tracking-tight leading-none">
               CatchMyBus
             </span>
-            <span className="hidden sm:inline text-navy-300 text-xs font-normal ml-0.5 leading-none">
-              Kerala
-            </span>
           </Link>
 
           {/* Right side auth controls */}
           <div className="flex items-center gap-2">
-            {/* Admin link — only shown when logged in as admin */}
-            {isAdmin && (
-              <Link
-                to="/admin"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-400 border border-amber-400/30 rounded hover:bg-amber-400/10 transition-colors min-h-0"
-                aria-label="Admin panel"
-              >
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                Admin
-              </Link>
-            )}
-
             {currentUser ? (
               /* User menu */
               <div className="relative">
@@ -91,10 +76,10 @@ const Header = () => {
                       {isAdmin && (
                         <Link
                           to="/admin"
-                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 sm:hidden min-h-0"
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 min-h-0"
                           onClick={() => setUserMenuOpen(false)}
                         >
-                          <LayoutDashboard className="w-4 h-4" />
+                          <LayoutDashboard className="w-4 h-4 text-neutral-400" />
                           Admin panel
                         </Link>
                       )}
