@@ -1,230 +1,301 @@
-import { Clock, MapPin, Bus as BusIcon, ChevronDown, ChevronUp, Navigation } from 'lucide-react';
+import { Clock, MapPin, ChevronDown, ChevronUp, Bookmark, BookmarkCheck } from 'lucide-react';
 import { BusResult } from '../types';
 import { useState } from 'react';
-import BusProgress from './BusProgress';
+import api from '../config/api';
+import toast from 'react-hot-toast';
 
 interface BusCardProps {
   result: BusResult;
-  compact?: boolean;
 }
 
-const BusCard = ({ result, compact = false }: BusCardProps) => {
+// ─── Badge helper ────────────────────────────────────────────────────────────
+const getBadgeClass = (type: string): string => {
+  switch (type) {
+    case 'KSRTC':      return 'badge-ksrtc';
+    case 'Private':    return 'badge-private';
+    case 'Fast':       return 'badge-fast';
+    case 'Super Fast': return 'badge-superfast';
+    default:           return 'badge-ordinary';
+  }
+};
+
+// ─── Flat segmented route progress ───────────────────────────────────────────
+interface SegmentedRouteProps {
+  from: string;
+  to: string;
+  via?: string | null;
+}
+
+const SegmentedRoute = ({ from, to, via }: SegmentedRouteProps) => {
+  const truncate = (s: string, n = 14) =>
+    s.length > n ? s.slice(0, n - 1) + '…' : s;
+
+  return (
+    <div className="route-progress w-full items-center" aria-label={`Route: ${from} to ${to}`}>
+      {/* Origin dot */}
+      <span className="route-progress__dot bg-[#1B7F4C]" aria-hidden="true" />
+      {/* Track segment */}
+      <span className="route-progress__line" aria-hidden="true" />
+      {/* Mid label — bus name / via stop */}
+      {via ? (
+        <span className="route-progress__mid-label" title={via}>
+          {truncate(via, 12)}
+        </span>
+      ) : null}
+      <span className="route-progress__line" aria-hidden="true" />
+      {/* Destination dot */}
+      <span className="route-progress__dot bg-[#B3261E]" aria-hidden="true" />
+    </div>
+  );
+};
+
+// ─── Time sanitiser ───────────────────────────────────────────────────────────
+const isPlaceholderTime = (s?: string) => {
+  if (!s) return true;
+  const v = String(s).trim();
+  if (!v || /^tbd$/i.test(v)) return true;
+  const norm = v.replace(/\s+/g, '').toLowerCase();
+  return /^0{1,2}(:0{2})?(am|pm)?$/.test(norm);
+};
+
+const sanitizeTime = (t?: string): string => {
+  if (!t || isPlaceholderTime(t)) return '—';
+  return t;
+};
+
+const extractStopNameFromRouteItem = (item: any): string => {
+  if (!item && item !== 0) return '';
+  if (typeof item === 'string') return item;
+  return item?.name || item?.stopName || item?.stop || '';
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
+const BusCard = ({ result }: BusCardProps) => {
   const { bus, fromTiming, toTiming, distance, estimatedTime, fare, partial } = result;
   const [expanded, setExpanded] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
-  const extractStopNameFromRouteItem = (item: any) => {
-    if (!item && item !== 0) return '';
-    if (typeof item === 'string') return item;
-    return item?.name || item?.stopName || item?.stop || '';
-  };
+  const displayFromName =
+    fromTiming?.stopName ||
+    bus.from ||
+    (Array.isArray(bus.route) && extractStopNameFromRouteItem(bus.route[0])) ||
+    'Origin';
+  const displayToName =
+    toTiming?.stopName ||
+    bus.to ||
+    (Array.isArray(bus.route) && extractStopNameFromRouteItem(bus.route[bus.route.length - 1])) ||
+    'Destination';
 
-  const displayFromName = (fromTiming?.stopName) || bus.from || (Array.isArray(bus.route) && extractStopNameFromRouteItem(bus.route[0])) || 'N/A';
-  const displayToName = (toTiming?.stopName) || bus.to || (Array.isArray(bus.route) && extractStopNameFromRouteItem(bus.route[bus.route.length - 1])) || 'N/A';
-  const isPlaceholderTime = (s?: string) => {
-    if (!s) return true;
-    const v = String(s).trim();
-    if (!v) return true;
-    if (/^tbd$/i.test(v)) return true;
-    const norm = v.replace(/\s+/g, '').toLowerCase();
-    return /^0{1,2}(:0{2})?(am|pm)?$/.test(norm);
-  };
+  const departureTime = sanitizeTime(fromTiming?.departureTime || fromTiming?.arrivalTime);
+  const arrivalTime   = sanitizeTime(toTiming?.arrivalTime || toTiming?.departureTime);
 
-  const sanitizeTime = (t?: string) => {
-    if (!t) return '—';
-    if (isPlaceholderTime(t)) return '—';
-    return t;
-  };
+  // Via — use bus.via (exists on Firestore docs but not typed in Bus interface)
+  const busAny = bus as any;
+  const viaLabel: string | null = busAny.via
+    ? busAny.via
+    : Array.isArray(bus.route) && bus.route.length > 2
+      ? extractStopNameFromRouteItem(bus.route[Math.floor(bus.route.length / 2)]) || null
+      : null;
 
-  const displayFromTime = sanitizeTime(fromTiming?.departureTime || fromTiming?.arrivalTime);
-  const displayToTime = sanitizeTime(toTiming?.arrivalTime || toTiming?.departureTime);
-
-  const getBusTypeColor = (type: string) => {
-    switch (type) {
-      case 'KSRTC':
-        return 'bg-blue-100 text-blue-800';
-      case 'Private':
-        return 'bg-purple-100 text-purple-800';
-      case 'Fast':
-        return 'bg-green-100 text-green-800';
-      case 'Super Fast':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleBookmark = async () => {
+    if (bookmarked || bookmarkLoading) return;
+    setBookmarkLoading(true);
+    try {
+      await api.post('/api/favorites', {
+        fromStop: displayFromName,
+        toStop: displayToName,
+      });
+      setBookmarked(true);
+      toast.success('Route bookmarked');
+    } catch {
+      toast.error('Could not save bookmark');
+    } finally {
+      setBookmarkLoading(false);
     }
   };
 
+  const hasRoute = Array.isArray(bus.route) && bus.route.length > 0;
+
   return (
-    <div className="card hover:shadow-2xl transition-all duration-300 animate-slide-up relative overflow-hidden">
-      {/* Show badge when timings are estimated */}
-      {result.timingSource === 'estimated' && (
-        <div className="absolute left-4 top-4 bg-yellow-50 text-yellow-800 px-3 py-1 rounded-full text-xs font-medium z-20">
+    <article className="transit-row rounded-lg overflow-hidden animate-fade-in">
+
+      {/* ── Partial match notice ─── */}
+      {partial && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-400/10 border-l-2 border-amber-400 text-xs text-neutral-600">
+          <span className="live-dot bg-amber-400" aria-hidden="true" />
+          Partial match — this bus passes through one of your searched stops
+        </div>
+      )}
+
+      {/* ── Estimated timing notice ─── */}
+      {result.timingSource === 'estimated' && !partial && (
+        <div className="flex items-center gap-1.5 px-4 py-1.5 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-400">
+          <Clock className="w-3 h-3" aria-hidden="true" />
           Estimated times
         </div>
       )}
-      {/* Partial Match Banner */}
-      {partial && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 px-4 py-2 mb-4">
-          <p className="text-sm text-yellow-800 font-medium">
-            ⚠️ Partial Match - This bus passes through one of your searched stops
-          </p>
-        </div>
-      )}
-      
-      {/* Animated Bus Icon */}
-      <div className="absolute top-4 right-4 opacity-10">
-        <BusIcon className="h-24 w-24 text-primary-600 animate-pulse" />
-      </div>
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between relative z-10">
-        {/* Bus Info */}
-        <div className="flex-1 mb-4 md:mb-0">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="bg-primary-600 p-3 rounded-lg">
-              <BusIcon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-800">{bus.busName}</h3>
-              <p className="text-sm text-gray-600">Bus No: {bus.busNumber}</p>
-              {(result.requestedFrom || result.requestedTo) && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Search: {result.requestedFrom || ''} → {result.requestedTo || ''} {result.requestedTime ? `at ${result.requestedTime}` : ''}
-                </p>
-              )}
-            </div>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getBusTypeColor(bus.type)}`}>
-              {bus.type}
+      {/* ── Main row ─── */}
+      <div className="px-4 py-3 flex items-start gap-3">
+
+        {/* Left: badge + number */}
+        <div className="flex flex-col items-start gap-1 flex-shrink-0 pt-0.5 w-[72px]">
+          <span className={`transit-badge ${getBadgeClass(bus.type)}`}>
+            {bus.type}
+          </span>
+          {bus.busNumber && (
+            <span className="text-2xs text-neutral-400 tabular-nums leading-none font-mono">
+              {bus.busNumber}
             </span>
-          </div>
-
-          {/* Timing Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start space-x-2">
-              <MapPin className="h-5 w-5 text-green-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-gray-700">{displayFromName}</p>
-                <p className="text-lg font-bold text-gray-900">{displayFromTime}</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-2">
-              <MapPin className="h-5 w-5 text-red-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-semibold text-gray-700">{displayToName}</p>
-                <p className="text-lg font-bold text-gray-900">{displayToTime}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6 md:ml-6 w-full md:w-auto">
-          <div className="flex md:flex-col space-x-6 md:space-x-0 md:space-y-3">
-            <div className="text-center">
-              <Clock className="h-5 w-5 text-gray-600 mx-auto mb-1" />
-              <p className="text-xs text-gray-600">Duration</p>
-              <p className="text-sm font-bold text-gray-900">{estimatedTime ?? 'N/A'} min</p>
-            </div>
-            <div className="text-center">
-              <MapPin className="h-5 w-5 text-gray-600 mx-auto mb-1" />
-              <p className="text-xs text-gray-600">Distance</p>
-              <p className="text-sm font-bold text-gray-900">{distance ?? 'N/A'} km</p>
-            </div>
-            <div className="text-center">
-              <div className="text-gray-600 mx-auto mb-1 text-xl font-medium">₹</div>
-              <p className="text-xs text-gray-600">Fare</p>
-              <p className="text-sm font-bold text-green-600">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(fare || 0)}</p>
-            </div>
-          </div>
-          {/* 3D Bus Animation - hide in compact mode to save perf */}
-          {!compact && (
-            <div className="mt-3 w-full min-w-[260px]">
-              <BusProgress height={80} />
-            </div>
           )}
         </div>
+
+        {/* Center: route + times */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-neutral-800 leading-tight truncate mb-1.5">
+            {bus.busName}
+          </p>
+
+          {/* Segmented route progress */}
+          <SegmentedRoute from={displayFromName} to={displayToName} via={viaLabel} />
+
+          {/* Stop names */}
+          <div className="flex items-center justify-between mt-1.5 gap-2">
+            <span className="text-xs text-neutral-500 truncate max-w-[40%]">
+              {displayFromName}
+            </span>
+            <span className="text-xs text-neutral-500 truncate max-w-[40%] text-right">
+              {displayToName}
+            </span>
+          </div>
+
+          {/* Departure → arrival */}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-base font-bold tabular-nums text-neutral-800">
+              {departureTime}
+            </span>
+            <span className="text-neutral-300 text-sm" aria-hidden="true">→</span>
+            <span className="text-base font-bold tabular-nums text-neutral-800">
+              {arrivalTime}
+            </span>
+            {estimatedTime != null && (
+              <span className="text-xs text-neutral-400 ml-1">
+                {estimatedTime} min
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right: fare + distance + bookmark */}
+        <div className="flex flex-col items-end gap-1 flex-shrink-0 pt-0.5">
+          <div className="text-right">
+            <div className="text-sm font-bold tabular-nums text-neutral-800 leading-tight">
+              {new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0,
+              }).format(fare || 0)}
+            </div>
+            {distance != null && (
+              <div className="text-xs tabular-nums text-neutral-400 leading-tight">
+                {distance} km
+              </div>
+            )}
+          </div>
+
+          {/* Inline bookmark */}
+          <button
+            onClick={handleBookmark}
+            disabled={bookmarkLoading}
+            aria-label={bookmarked ? 'Route bookmarked' : 'Bookmark this route'}
+            className="mt-1 p-1 rounded text-neutral-300 hover:text-amber-400 hover:bg-amber-400/10 transition-colors disabled:opacity-50 min-h-0"
+            title={bookmarked ? 'Bookmarked' : 'Save route'}
+          >
+            {bookmarked
+              ? <BookmarkCheck className="w-4 h-4 text-amber-400" />
+              : <Bookmark className="w-4 h-4" />
+            }
+          </button>
+        </div>
       </div>
 
-      {/* Expandable Route Details */}
-      {!compact && bus.route && Array.isArray(bus.route) && bus.route.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+      {/* ── Expand/collapse intermediate stops ─── */}
+      {hasRoute && (
+        <>
           <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center justify-between w-full text-left text-sm font-medium text-gray-700 hover:text-primary-600 transition-colors"
+            onClick={() => setExpanded(v => !v)}
+            aria-expanded={expanded}
+            className="w-full flex items-center justify-between px-4 py-2.5 border-t border-neutral-100 text-xs font-medium text-neutral-500 hover:bg-neutral-50 hover:text-neutral-700 transition-colors min-h-0"
           >
-            <span className="flex items-center">
-              <Navigation className="h-4 w-4 mr-2" />
-              View Full Route ({bus.route.length} stops)
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+              {bus.route.length} stops
             </span>
-            {expanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            {expanded
+              ? <ChevronUp className="w-4 h-4" aria-hidden="true" />
+              : <ChevronDown className="w-4 h-4" aria-hidden="true" />
+            }
           </button>
 
           {expanded && (
-            <div className="mt-4 animate-slide-up">
-              <div className="relative">
-                {/* Route Line */}
-                <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gradient-to-b from-green-500 via-blue-500 to-red-500"></div>
-                
-                {/* Stops List */}
-                <div className="space-y-4">
-                  {bus.route.map((stop: any, idx: number) => {
-                    const stopName = extractStopNameFromRouteItem(stop) || 'Unknown';
-                    const isFirst = idx === 0;
-                    const isLast = idx === bus.route.length - 1;
-                    const fromCmp = (fromTiming?.stopName || displayFromName).toLowerCase();
-                    const toCmp = (toTiming?.stopName || displayToName).toLowerCase();
-                    const isFromStop = stopName.toLowerCase().includes(fromCmp) || fromCmp.includes(stopName.toLowerCase());
-                    const isToStop = stopName.toLowerCase().includes(toCmp) || toCmp.includes(stopName.toLowerCase());
-                    
-                    return (
-                      <div key={idx} className="flex items-center relative">
-                        {/* Stop Marker */}
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 ${
-                          isFirst ? 'bg-green-500 animate-bounce' : 
-                          isLast ? 'bg-red-500 animate-pulse' : 
-                          isFromStop || isToStop ? 'bg-blue-500 ring-4 ring-blue-200' :
-                          'bg-gray-300'
-                        }`}>
-                          {isFirst || isLast ? (
-                            <MapPin className="h-5 w-5 text-white" />
-                          ) : (
-                            <div className="w-3 h-3 bg-white rounded-full"></div>
-                          )}
-                        </div>
-                        
-                        {/* Stop Info */}
-                        <div className="ml-4 flex-1">
-                          <p className={`font-medium ${
-                            isFromStop || isToStop ? 'text-blue-700 text-lg' : 'text-gray-700'
-                          }`}>
-                            {stopName}
-                            {isFirst && ' (Start)'}
-                            {isLast && ' (End)'}
-                            {isFromStop && !isFirst && ' (Your From)'}
-                            {isToStop && !isLast && ' (Your To)'}
-                          </p>
-                          {(isFromStop || isToStop) && bus.timings && bus.timings[idx] && (
-                            <p className="text-sm text-gray-600">
-                              Arrival: {sanitizeTime(bus.timings[idx].arrivalTime)} | 
-                              Departure: {sanitizeTime(bus.timings[idx].departureTime)}
-                            </p>
-                          )}
-                        </div>
-                        
-                        {/* Animated Bus Icon for current position */}
-                        {idx < bus.route.length - 1 && idx % 3 === 1 && (
-                          <div className="absolute left-3 animate-bus-move">
-                            <BusIcon className="h-6 w-6 text-primary-600" />
-                          </div>
+            <div className="border-t border-neutral-100 px-4 py-3 animate-slide-up">
+              {/* Vertical timeline */}
+              <ol className="relative">
+                {bus.route.map((stop: any, idx: number) => {
+                  const stopName = extractStopNameFromRouteItem(stop) || 'Unknown';
+                  const isFirst = idx === 0;
+                  const isLast  = idx === bus.route.length - 1;
+                  const fromCmp = (fromTiming?.stopName || displayFromName).toLowerCase();
+                  const toCmp   = (toTiming?.stopName   || displayToName).toLowerCase();
+                  const isFromStop = stopName.toLowerCase().includes(fromCmp) || fromCmp.includes(stopName.toLowerCase());
+                  const isToStop   = stopName.toLowerCase().includes(toCmp)   || toCmp.includes(stopName.toLowerCase());
+                  const isHighlighted = isFromStop || isToStop;
+
+                  const timing = bus.timings?.[idx];
+                  const timeStr = sanitizeTime(timing?.arrivalTime || timing?.departureTime);
+
+                  return (
+                    <li key={idx} className="flex gap-3 pb-3 last:pb-0 relative">
+                      {/* Connector line */}
+                      {!isLast && (
+                        <span
+                          className="absolute left-[7px] top-4 bottom-0 w-px bg-neutral-200"
+                          aria-hidden="true"
+                        />
+                      )}
+                      {/* Stop dot */}
+                      <span
+                        className={`relative z-10 flex-shrink-0 w-3.5 h-3.5 rounded-full border-2 mt-0.5 ${
+                          isFirst        ? 'border-[#1B7F4C] bg-[#1B7F4C]'  :
+                          isLast         ? 'border-[#B3261E] bg-[#B3261E]'  :
+                          isHighlighted  ? 'border-navy-800 bg-navy-800'     :
+                                           'border-neutral-300 bg-white'
+                        }`}
+                        aria-hidden="true"
+                      />
+                      {/* Stop info */}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm leading-tight ${isHighlighted ? 'font-semibold text-neutral-800' : 'text-neutral-600'}`}>
+                          {stopName}
+                          {isFirst && <span className="ml-1 text-2xs text-[#1B7F4C] font-normal">(start)</span>}
+                          {isLast  && <span className="ml-1 text-2xs text-[#B3261E] font-normal">(end)</span>}
+                          {isFromStop && !isFirst && <span className="ml-1 text-2xs text-neutral-400 font-normal">(your from)</span>}
+                          {isToStop   && !isLast  && <span className="ml-1 text-2xs text-neutral-400 font-normal">(your to)</span>}
+                        </p>
+                        {timeStr !== '—' && (
+                          <p className="text-xs tabular-nums text-neutral-400 mt-0.5">{timeStr}</p>
                         )}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                    </li>
+                  );
+                })}
+              </ol>
             </div>
           )}
-        </div>
+        </>
       )}
-    </div>
+    </article>
   );
 };
 

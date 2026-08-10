@@ -4,135 +4,171 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Base layer ──────────────────────────────────────────────────────────── */
 @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply font-sans antialiased;
+    @apply font-sans bg-neutral-50 text-neutral-800;
+    font-feature-settings: "kern" 1;
+  }
+
+  /* Make all time/fare/distance data tabular by default */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  /* Touch targets minimum 44px */
+  button, a, [role="button"] {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  input, select {
+    min-height: 44px;
   }
 }
 
+/* ─── Component layer ─────────────────────────────────────────────────────── */
 @layer components {
-  .btn-primary {
-    @apply bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg;
+
+  /* Primary CTA — amber signal */
+  .btn-amber {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-amber-400 text-navy-800 font-semibold text-sm rounded-lg
+           hover:bg-amber-300 active:bg-amber-500
+           transition-colors duration-150
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400;
+    min-height: 44px;
   }
-  
-  .btn-secondary {
-    @apply bg-white text-primary-600 px-6 py-3 rounded-lg font-medium border-2 border-primary-600 hover:bg-primary-50 transition-colors duration-200;
+
+  /* Secondary — navy ghost */
+  .btn-navy {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-navy-800 text-white font-semibold text-sm rounded-lg
+           hover:bg-navy-700 active:bg-navy-900
+           transition-colors duration-150
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-800;
+    min-height: 44px;
   }
-  
+
+  /* Outline ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5
+           bg-transparent text-neutral-700 font-medium text-sm rounded-lg
+           border border-neutral-200
+           hover:bg-neutral-100 active:bg-neutral-200
+           transition-colors duration-150;
+    min-height: 44px;
+  }
+
+  /* Transit card — border-based elevation, not shadow-xl */
+  .transit-card {
+    @apply bg-white rounded-lg border border-neutral-200 shadow-transit;
+  }
+
+  /* Dense transit row card (results list) */
+  .transit-row {
+    @apply bg-white border border-neutral-200 shadow-transit
+           hover:border-neutral-300 hover:shadow-transit-md
+           transition-[border-color,box-shadow] duration-150;
+  }
+
+  /* Bus type badges — muted, desaturated */
+  .badge-ksrtc     { @apply text-[#2E5A8A] bg-[#EBF1F7]; }
+  .badge-private   { @apply text-[#5B3A8A] bg-[#EEE9F7]; }
+  .badge-fast      { @apply text-[#24643C] bg-[#E8F5EE]; }
+  .badge-superfast { @apply text-[#8A2E2E] bg-[#FBE9E9]; }
+  .badge-ordinary  { @apply text-[#4A5568] bg-[#F0F1F3]; }
+
+  .transit-badge {
+    @apply inline-block px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-widest rounded;
+  }
+
+  /* Input fields — off-white bg, navy focus ring */
   .input-field {
-    @apply w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all duration-200;
+    @apply w-full px-3 py-2.5 text-sm text-neutral-800 bg-neutral-50
+           border border-neutral-200 rounded-lg
+           placeholder:text-neutral-400
+           focus:outline-none focus:border-navy-800 focus:ring-2 focus:ring-navy-800/15
+           transition-[border-color,box-shadow] duration-150;
+    min-height: 44px;
   }
-  
-  .card {
-    @apply bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300;
+
+  /* Segmented route progress line */
+  .route-progress {
+    @apply flex items-center gap-0 w-full;
   }
-  
-  .section-title {
-    @apply text-2xl md:text-3xl font-bold text-gray-800 mb-4;
+  .route-progress__dot {
+    @apply w-2 h-2 rounded-full flex-shrink-0;
+  }
+  .route-progress__line {
+    @apply flex-1 h-px border-t border-dashed border-neutral-300;
+  }
+  .route-progress__mid-label {
+    @apply px-1.5 text-2xs text-neutral-400 font-medium whitespace-nowrap flex-shrink-0;
+  }
+
+  /* Sticky filter bar */
+  .sticky-filter-bar {
+    @apply sticky top-[56px] z-30 bg-navy-800 border-b border-navy-900;
+  }
+
+  /* Live status dot */
+  .live-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0;
+  }
+
+  /* Section label */
+  .section-label {
+    @apply text-2xs font-semibold uppercase tracking-widest text-neutral-400;
   }
 }
 
-/* Leaflet Map Styles */
+/* ─── Utility layer ───────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Tabular-nums for timing/fare data */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Subtle animations — disabled when user prefers reduced motion */
+  @media (prefers-reduced-motion: no-preference) {
+    .animate-fade-in  { animation: fadeIn  0.25s ease-out both; }
+    .animate-slide-up { animation: slideUp 0.20s ease-out both; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0);   }
+    }
+  }
+
+  /* Map tile muting */
+  .map-muted {
+    filter: saturate(0.82) brightness(1.03);
+  }
+}
+
+/* ─── Leaflet overrides ───────────────────────────────────────────────────── */
 .leaflet-container {
-  @apply rounded-lg shadow-md;
+  border-radius: 0.5rem;
   height: 100%;
   width: 100%;
 }
-
-/* Fallback bus animation (no WebGL) */
-.bus-fallback-wrapper {
-  width: 100%;
-  padding: 6px 0;
-}
-.bus-fallback-track {
-  position: relative;
-  height: 6px;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, #e5e7eb, #d1d5db);
-  overflow: hidden;
-}
-.bus-fallback-icon {
-  position: absolute;
-  top: -18px;
-  left: 0;
-  animation: busMoveX 3.2s ease-in-out infinite;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
-}
-
-@keyframes busMoveX {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(calc(100% - 24px)); }
-  100% { transform: translateX(0); }
-}
-
-@layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.6s ease-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out;
-  }
-
-  .animate-bus-move {
-    animation: busMove 3s ease-in-out infinite;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes busMove {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(30px); }
-  }
-}
-
-@layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.6s ease-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out;
-  }
-
-  .animate-bus-move {
-    animation: busMove 3s ease-in-out infinite;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes busMove {
-    0%, 100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(30px);
-    }
-  }
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(11,37,69,0.15);
 }

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
+import { Search } from 'lucide-react';
 
 interface AutocompleteInputProps {
   label: string;
@@ -7,6 +8,7 @@ interface AutocompleteInputProps {
   onChange: (value: string) => void;
   suggestions: string[];
   icon?: React.ReactNode;
+  id?: string;
 }
 
 const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
@@ -16,75 +18,115 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   onChange,
   suggestions,
   icon,
+  id: idProp,
 }) => {
+  const generatedId = useId();
+  const inputId = idProp ?? generatedId;
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowSuggestions(false);
+        setActiveIndex(-1);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const userInput = e.target.value;
-    onChange(userInput);
-
-    if (userInput.trim()) {
-      const filtered = suggestions.filter(
-        (suggestion) =>
-          suggestion.toLowerCase().includes(userInput.toLowerCase())
-      );
-      setFilteredSuggestions(filtered);
-      setShowSuggestions(true);
-    } else {
+  const openSuggestions = (input: string) => {
+    if (!input.trim()) {
       setShowSuggestions(false);
+      return;
     }
+    const filtered = suggestions.filter(s =>
+      s.toLowerCase().includes(input.toLowerCase())
+    );
+    setFilteredSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
+    setActiveIndex(-1);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
+    openSuggestions(e.target.value);
+  };
+
+  const handleSelect = (suggestion: string) => {
     onChange(suggestion);
     setShowSuggestions(false);
+    setActiveIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(i => Math.min(i + 1, filteredSuggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      handleSelect(filteredSuggestions[activeIndex]);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setActiveIndex(-1);
+    }
   };
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {icon}
+      <label
+        htmlFor={inputId}
+        className="block text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1.5"
+      >
+        {icon && <span className="inline-flex mr-1 opacity-70">{icon}</span>}
         {label}
       </label>
       <input
+        id={inputId}
         type="text"
-        className="input-field w-full"
+        className="input-field"
         placeholder={placeholder}
         value={value}
         onChange={handleInputChange}
-        onFocus={() => {
-            if (value.trim()) {
-                const filtered = suggestions.filter(
-                    (suggestion) =>
-                      suggestion.toLowerCase().includes(value.toLowerCase())
-                  );
-                  setFilteredSuggestions(filtered);
-                  setShowSuggestions(true);
-            }
-        }}
+        onFocus={() => openSuggestions(value)}
+        onKeyDown={handleKeyDown}
+        autoComplete="off"
+        aria-autocomplete="list"
+        aria-expanded={showSuggestions}
+        aria-controls={showSuggestions ? `${inputId}-list` : undefined}
+        aria-activedescendant={activeIndex >= 0 ? `${inputId}-opt-${activeIndex}` : undefined}
       />
+
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+        <ul
+          ref={listRef}
+          id={`${inputId}-list`}
+          role="listbox"
+          className="absolute z-30 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-transit-md max-h-52 overflow-y-auto animate-fade-in"
+        >
           {filteredSuggestions.map((suggestion, index) => (
             <li
               key={index}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm text-gray-700"
-              onClick={() => handleSuggestionClick(suggestion)}
+              id={`${inputId}-opt-${index}`}
+              role="option"
+              aria-selected={index === activeIndex}
+              className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer transition-colors duration-100 ${
+                index === activeIndex
+                  ? 'bg-navy-800 text-white'
+                  : 'text-neutral-700 hover:bg-neutral-50'
+              }`}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => handleSelect(suggestion)}
             >
+              <Search className="w-3 h-3 flex-shrink-0 opacity-40" />
               {suggestion}
             </li>
           ))}

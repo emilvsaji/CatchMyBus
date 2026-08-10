@@ -1,59 +1,71 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Navigation, Clock, Star } from 'lucide-react';
+import { Search, MapPin, Navigation, Clock, Map, Bookmark } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
 import { BusResult } from '../types';
 import BusCard from '../components/BusCard';
 import AutocompleteInput from '../components/AutocompleteInput';
 
+const FEATURE_ITEMS = [
+  {
+    icon: <Clock className="w-5 h-5 text-amber-400" strokeWidth={1.8} />,
+    title: 'Arrival times',
+    description: 'See departure and arrival times for any route between two Kerala bus stops.',
+  },
+  {
+    icon: <Map className="w-5 h-5 text-amber-400" strokeWidth={1.8} />,
+    title: 'Route on map',
+    description: 'View the full route — origin, intermediate stops, and destination — on a live map.',
+  },
+  {
+    icon: <Bookmark className="w-5 h-5 text-amber-400" strokeWidth={1.8} />,
+    title: 'Save routes',
+    description: 'Bookmark any result directly from the card so you can re-search it in one tap.',
+  },
+] as const;
+
 const HomePage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    from: '',
-    to: '',
-    busType: 'all',
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
-    showAll: false,
+    from:     '',
+    to:       '',
+    busType:  'all',
+    time:     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+    showAll:  false,
   });
   const [loadingResults, setLoadingResults] = useState(false);
-  const [results, setResults] = useState<BusResult[]>([]);
-  const [stops, setStops] = useState<string[]>([]);
+  const [results,        setResults]        = useState<BusResult[]>([]);
+  const [stops,          setStops]          = useState<string[]>([]);
+  const [hasSearched,    setHasSearched]    = useState(false);
 
+  // Fetch stops for autocomplete
   useEffect(() => {
-    const fetchStops = async () => {
-      try {
-        const response = await api.get('/api/buses/stops');
-        if (response.data.success) {
-          const stopNames = response.data.data.map((stop: any) => stop.name);
-          setStops(Array.from(new Set(stopNames)));
+    api.get('/api/buses/stops')
+      .then(res => {
+        if (res.data.success) {
+          const names: string[] = Array.from(
+            new Set(res.data.data.map((s: any) => s.name as string))
+          );
+          setStops(names);
         }
-      } catch (error) {
-        console.error('Failed to fetch stops:', error);
-      }
-    };
-    fetchStops();
+      })
+      .catch(() => {/* silently ignore if stops endpoint not reachable */});
   }, []);
 
   const fetchBusResults = async (from: string, to: string, type: string) => {
     try {
       setLoadingResults(true);
-      const resp = await api.get('/api/buses/search', { params: { from, to, type, time: formData.time, showAll: formData.showAll } });
+      setHasSearched(true);
+      const resp = await api.get('/api/buses/search', {
+        params: { from, to, type, time: formData.time, showAll: formData.showAll },
+      });
       setResults(resp.data.data || []);
-    } catch (err) {
-      // Improve error logging for debugging
-      // AxiosError may contain response data/status — surface that to the console and user
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const e: any = err;
-      if (e.response) {
-        console.error('Error fetching bus results - response:', e.response.status, e.response.data);
-        toast.error(`Search failed: ${e.response.status} ${e.response.statusText || ''}`);
-      } else if (e.request) {
-        console.error('Error fetching bus results - no response (network):', e.message);
-        toast.error('Network error: failed to contact backend');
+    } catch (err: any) {
+      if (err.response) {
+        toast.error(`Search failed: ${err.response.status}`);
       } else {
-        console.error('Error fetching bus results:', e.message || e);
-        toast.error('Failed to fetch bus results');
+        toast.error('Cannot reach backend — check your connection.');
       }
       setResults([]);
     } finally {
@@ -63,210 +75,208 @@ const HomePage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!formData.from || !formData.to) {
-      toast.error('Please select both origin and destination');
+      toast.error('Enter both an origin and a destination');
       return;
     }
-
     if (formData.from === formData.to) {
       toast.error('Origin and destination cannot be the same');
       return;
     }
+    fetchBusResults(formData.from, formData.to, formData.busType);
+  };
 
-    // Perform inline search and show results on Home
-    fetchBusResults(formData.from, formData.to, formData.busType || 'all');
+  const viewAllResults = () => {
+    navigate(
+      `/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}&time=${encodeURIComponent(formData.time)}&showAll=${formData.showAll}`
+    );
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-16">
-      {/* Hero Section */}
-      <div className="text-center mb-12 animate-fade-in">
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-          Find Your Bus in <span className="text-primary-600">Real-Time</span>
-        </h1>
-        <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-          Get accurate bus timings, routes, and availability across Kerala.
-          Never miss your bus again!
-        </p>
-      </div>
+    <div>
+      {/* ── Hero band ─────────────────────────────────────────────────────────── */}
+      <section className="bg-navy-800 pt-10 pb-20 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="section-label text-amber-400/80 mb-3">Kerala Bus Timings</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight">
+            Find buses between{' '}
+            <span className="text-amber-400">any two stops</span>
+          </h1>
+          <p className="mt-3 text-sm text-white/60 leading-relaxed max-w-md mx-auto">
+            Timings, fares, and route maps for KSRTC, private, fast, and ordinary bus services
+            across Kerala.
+          </p>
+        </div>
+      </section>
 
-      {/* Search Card */}
-      <div className="max-w-3xl mx-auto mb-16 animate-slide-up">
-        <div className="card">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-            <Search className="h-6 w-6 mr-2 text-primary-600" />
-            Search for Buses
-          </h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* From Location */}
-            <div>
+      {/* ── Search card (overlapping hero) ────────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto px-4 -mt-12">
+        <div className="transit-card p-5 sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <AutocompleteInput
-                label="From (Current Location / Bus Stop)"
-                placeholder="Enter starting point (e.g., Thiruvananthapuram)"
+                id="search-from"
+                label="From"
+                placeholder="e.g. Thiruvananthapuram"
                 value={formData.from}
-                onChange={(val) => setFormData({ ...formData, from: val })}
+                onChange={val => setFormData(f => ({ ...f, from: val }))}
                 suggestions={stops}
-                icon={<MapPin className="h-4 w-4 inline mr-1" />}
+                icon={<MapPin className="w-3.5 h-3.5" />}
               />
-            </div>
-
-            {/* To Location */}
-            <div>
               <AutocompleteInput
-                label="To (Destination Bus Stop)"
-                placeholder="Enter destination (e.g., Kochi)"
+                id="search-to"
+                label="To"
+                placeholder="e.g. Kochi"
                 value={formData.to}
-                onChange={(val) => setFormData({ ...formData, to: val })}
+                onChange={val => setFormData(f => ({ ...f, to: val }))}
                 suggestions={stops}
-                icon={<Navigation className="h-4 w-4 inline mr-1" />}
+                icon={<Navigation className="w-3.5 h-3.5" />}
               />
             </div>
 
-            {/* Bus Type Filter */}
-            {/* Time Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="h-4 w-4 inline mr-1" />
-                Departure Time (optional)
-              </label>
-              <input
-                type="time"
-                className="input-field"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              {/* Time */}
+              <div>
+                <label
+                  htmlFor="search-time"
+                  className="block text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1.5"
+                >
+                  <Clock className="w-3.5 h-3.5 inline mr-1 opacity-70" />
+                  Depart after
+                </label>
+                <input
+                  id="search-time"
+                  type="time"
+                  className="input-field"
+                  value={formData.time}
+                  onChange={e => setFormData(f => ({ ...f, time: e.target.value }))}
+                />
+              </div>
+
+              {/* Bus type */}
+              <div>
+                <label
+                  htmlFor="search-type"
+                  className="block text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1.5"
+                >
+                  Bus type
+                </label>
+                <select
+                  id="search-type"
+                  className="input-field"
+                  value={formData.busType}
+                  onChange={e => setFormData(f => ({ ...f, busType: e.target.value }))}
+                >
+                  <option value="all">All buses</option>
+                  <option value="KSRTC">KSRTC</option>
+                  <option value="Private">Private</option>
+                  <option value="Fast">Fast</option>
+                  <option value="Super Fast">Super Fast</option>
+                  <option value="Ordinary">Ordinary</option>
+                </select>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-3">
+            {/* Show all toggle */}
+            <label className="flex items-center gap-2 cursor-pointer select-none min-h-0">
               <input
-                id="showAll"
+                id="search-show-all"
                 type="checkbox"
                 checked={formData.showAll}
-                onChange={(e) => setFormData({ ...formData, showAll: e.target.checked })}
-                className="h-4 w-4 text-primary-600"
+                onChange={e => setFormData(f => ({ ...f, showAll: e.target.checked }))}
+                className="w-4 h-4 accent-amber-400"
               />
-              <label htmlFor="showAll" className="text-sm text-gray-700">Show all matching buses (ignore time prioritization)</label>
-            </div>
+              <span className="text-xs text-neutral-500">
+                Show all buses (ignore time)
+              </span>
+            </label>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="h-4 w-4 inline mr-1" />
-                Bus Type (Optional)
-              </label>
-              <select
-                className="input-field"
-                value={formData.busType}
-                onChange={(e) => setFormData({ ...formData, busType: e.target.value })}
-              >
-                <option value="all">All Buses</option>
-                <option value="KSRTC">KSRTC</option>
-                <option value="Private">Private</option>
-                <option value="Fast">Fast</option>
-                <option value="Super Fast">Super Fast</option>
-                <option value="Ordinary">Ordinary</option>
-              </select>
-            </div>
-
-            {/* Submit Button */}
-            <button type="submit" className="btn-primary w-full">
-              <Search className="h-5 w-5 inline mr-2" />
-              Search Buses
+            <button
+              id="search-submit"
+              type="submit"
+              className="btn-amber w-full justify-center"
+            >
+              <Search className="w-4 h-4" />
+              Search buses
             </button>
           </form>
         </div>
-      </div>
+      </section>
 
-      {/* Inline Results (when searched) */}
-      <div className="max-w-3xl mx-auto mb-16 animate-slide-up">
-        {loadingResults ? (
-          <div className="card text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching for buses...</p>
+      {/* ── Inline results ─────────────────────────────────────────────────────── */}
+      <section className="max-w-2xl mx-auto px-4 mt-6">
+        {loadingResults && (
+          <div className="transit-card px-6 py-10 text-center animate-fade-in">
+            <div className="inline-block w-8 h-8 border-2 border-navy-800/20 border-t-navy-800 rounded-full animate-spin mb-3" />
+            <p className="text-sm text-neutral-500">Searching…</p>
           </div>
-        ) : results.length === 0 ? null : (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Search Results</h2>
-              <button onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}&time=${encodeURIComponent(formData.time)}&showAll=${formData.showAll}`)} className="text-sm text-primary-600 hover:underline">
-                View full results
-              </button>
-            </div>
+        )}
 
-            <div className="space-y-4">
-              {results.slice(0, 3).map((r, i) => (
-                <BusCard key={i} result={r} compact={true} />
-              ))}
+        {!loadingResults && hasSearched && results.length === 0 && (
+          <div className="transit-card px-6 py-10 text-center animate-fade-in">
+            <p className="text-sm font-medium text-neutral-700 mb-1">No buses found</p>
+            <p className="text-xs text-neutral-400">
+              Try adjusting the departure time or bus type filter, or check your stop names.
+            </p>
+          </div>
+        )}
+
+        {!loadingResults && results.length > 0 && (
+          <div className="animate-fade-in">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-neutral-700">
+                {results.length} bus{results.length !== 1 ? 'es' : ''} found
+              </p>
               {results.length > 3 && (
-                <button 
-                  onClick={() => navigate(`/search?from=${encodeURIComponent(formData.from)}&to=${encodeURIComponent(formData.to)}&type=${formData.busType}&time=${encodeURIComponent(formData.time)}&showAll=${formData.showAll}`)}
-                  className="w-full btn-secondary py-3"
+                <button
+                  onClick={viewAllResults}
+                  className="text-xs font-medium text-navy-800 hover:text-amber-500 transition-colors min-h-0"
                 >
-                  View All {results.length} Results →
+                  View all {results.length} →
                 </button>
               )}
             </div>
+
+            <div className="space-y-2">
+              {results.slice(0, 3).map((r, i) => (
+                <BusCard key={i} result={r} />
+              ))}
+            </div>
+
+            {results.length > 3 && (
+              <button
+                onClick={viewAllResults}
+                className="mt-3 w-full btn-ghost text-sm justify-center"
+              >
+                View all {results.length} results →
+              </button>
+            )}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Features Section */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div className="card text-center hover:scale-105 transition-transform">
-          <div className="bg-primary-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Clock className="h-8 w-8 text-primary-600" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Real-Time Updates</h3>
-          <p className="text-gray-600">
-            Get accurate arrival times and bus availability information instantly
-          </p>
+      {/* ── Feature strip ──────────────────────────────────────────────────────── */}
+      <section
+        className="max-w-2xl mx-auto px-4 mt-12 mb-10"
+        aria-label="What CatchMyBus does"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {FEATURE_ITEMS.map(({ icon, title, description }) => (
+            <div
+              key={title}
+              className="flex flex-row sm:flex-col gap-3 sm:gap-2 p-4 border border-neutral-200 rounded-lg bg-white"
+            >
+              <div className="flex-shrink-0 mt-0.5 sm:mt-0">
+                {icon}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-neutral-800 leading-tight">{title}</p>
+                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{description}</p>
+              </div>
+            </div>
+          ))}
         </div>
-
-        <div className="card text-center hover:scale-105 transition-transform">
-          <div className="bg-accent-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <MapPin className="h-8 w-8 text-accent-600" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Route Visualization</h3>
-          <p className="text-gray-600">
-            View bus routes on interactive maps with stop-by-stop details
-          </p>
-        </div>
-
-        <div className="card text-center hover:scale-105 transition-transform">
-          <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Star className="h-8 w-8 text-green-600" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Save Favorites</h3>
-          <p className="text-gray-600">
-            Save your frequent routes for quick access anytime
-          </p>
-        </div>
-      </div>
-
-      {/* Info Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl shadow-xl p-8 md:p-12 text-white text-center">
-        <h2 className="text-3xl font-bold mb-4">Making Bus Travel Easier for Kerala</h2>
-        <p className="text-lg mb-6 opacity-90 max-w-3xl mx-auto">
-          CatchMyBus provides comprehensive bus timing information for routes across
-          Kerala. Whether you're a daily commuter, student, or traveler, we help you
-          plan your journey efficiently.
-        </p>
-        <div className="flex flex-wrap justify-center gap-8 text-center">
-          <div>
-            <div className="text-4xl font-bold mb-1">500+</div>
-            <div className="text-sm opacity-90">Bus Routes</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-1">1000+</div>
-            <div className="text-sm opacity-90">Bus Stops</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold mb-1">24/7</div>
-            <div className="text-sm opacity-90">Service</div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 };

@@ -1,79 +1,54 @@
-import { Github, Mail, MapPin, Phone } from 'lucide-react';
+import { Bus, Mail, Github } from 'lucide-react';
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-900 text-gray-300 mt-auto">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* About Section */}
-          <div>
-            <h3 className="text-white font-bold text-lg mb-4">CatchMyBus</h3>
-            <p className="text-sm mb-4">
-              Intelligent bus time information system for Kerala. Making public
-              transportation more accessible and reliable for everyone.
-            </p>
-            <div className="flex items-center space-x-2 text-sm">
-              <MapPin className="h-4 w-4" />
-              <span>Kerala, India</span>
-            </div>
-          </div>
+    <footer className="bg-navy-800 text-white/70 mt-auto">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
 
-          {/* Quick Links */}
+          {/* Brand */}
           <div>
-            <h3 className="text-white font-bold text-lg mb-4">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a href="/" className="hover:text-primary-400 transition-colors">
-                  Home
-                </a>
-              </li>
-              <li>
-                <a href="/about" className="hover:text-primary-400 transition-colors">
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a href="/favorites" className="hover:text-primary-400 transition-colors">
-                  Favorites
-                </a>
-              </li>
-              <li>
-                <a href="/admin" className="hover:text-primary-400 transition-colors">
-                  Admin Panel
-                </a>
-              </li>
-            </ul>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded bg-amber-400 flex items-center justify-center flex-shrink-0">
+                <Bus className="w-3.5 h-3.5 text-navy-800" strokeWidth={2.5} />
+              </div>
+              <span className="text-white font-bold text-sm">CatchMyBus</span>
+            </div>
+            <p className="text-xs leading-relaxed max-w-xs">
+              Bus timing information for Kerala — helping commuters, students,
+              and travellers plan their journeys.
+            </p>
           </div>
 
           {/* Contact */}
-          <div>
-            <h3 className="text-white font-bold text-lg mb-4">Contact</h3>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-center space-x-2">
-                <Mail className="h-4 w-4" />
-                <a href="mailto:info@catchmybus.com" className="hover:text-primary-400 transition-colors">
-                  info@catchmybus.com
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <Phone className="h-4 w-4" />
-                <span>+91 1234567890</span>
-              </li>
-              <li className="flex items-center space-x-2">
-                <Github className="h-4 w-4" />
-                <a href="https://github.com" className="hover:text-primary-400 transition-colors" target="_blank" rel="noopener noreferrer">
-                  GitHub
-                </a>
-              </li>
-            </ul>
+          <div className="flex flex-col gap-2">
+            <p className="section-label text-white/40">Contact</p>
+            <a
+              href="mailto:info@catchmybus.com"
+              className="flex items-center gap-2 text-xs hover:text-amber-400 transition-colors min-h-0"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              info@catchmybus.com
+            </a>
+            <a
+              href="https://github.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs hover:text-amber-400 transition-colors min-h-0"
+            >
+              <Github className="w-3.5 h-3.5" />
+              GitHub
+            </a>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800 mt-8 pt-6 text-center text-sm">
-          <p>
-            &copy; {new Date().getFullYear()} CatchMyBus. All rights reserved.
-            Made with ❤️ for Kerala
+        {/* Bottom strip */}
+        <div className="border-t border-white/10 mt-6 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <p className="text-xs">
+            &copy; {new Date().getFullYear()} CatchMyBus. Kerala, India.
+          </p>
+          <p className="text-xs text-white/40">
+            Open source · For commuters
           </p>
         </div>
       </div>

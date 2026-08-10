@@ -1,26 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, TrendingUp, Heart, AlertCircle, Filter } from 'lucide-react';
+import { ArrowLeft, Map, AlertCircle, Filter, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
 import { BusResult } from '../types';
 import BusCard from '../components/BusCard';
 import RouteMap from '../components/RouteMap';
 
+const BUS_TYPES = ['all', 'KSRTC', 'Private', 'Fast', 'Super Fast', 'Ordinary'] as const;
+
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [results, setResults] = useState<BusResult[]>([]);
-  const [showMap, setShowMap] = useState(false);
-  const [filterType, setFilterType] = useState('all');
+  const [loading,      setLoading]      = useState(true);
+  const [results,      setResults]      = useState<BusResult[]>([]);
+  const [showMap,      setShowMap]      = useState(false);
+  const [filterType,   setFilterType]   = useState('all');
 
   const from = searchParams.get('from') || '';
-  const to = searchParams.get('to') || '';
+  const to   = searchParams.get('to')   || '';
   const type = searchParams.get('type') || 'all';
 
   useEffect(() => {
     fetchBusResults();
+    // reset filter when params change
+    setFilterType('all');
   }, [from, to, type]);
 
   const fetchBusResults = async () => {
@@ -38,127 +42,110 @@ const SearchResults = () => {
     }
   };
 
-  const handleSaveFavorite = async () => {
-    try {
-      await api.post('/api/favorites', { fromStop: from, toStop: to });
-      toast.success('Route saved to favorites!');
-    } catch (error) {
-      console.error('Error saving favorite:', error);
-      toast.error('Failed to save favorite');
-    }
-  };
-
-  const filteredResults = filterType === 'all' 
-    ? results 
+  const filteredResults = filterType === 'all'
+    ? results
     : results.filter(r => r.bus.type === filterType);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-6">
+    <div className="max-w-4xl mx-auto px-4 py-6">
+
+      {/* ── Back + route header ──────────────────────────────────────────────── */}
+      <div className="mb-4">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center text-primary-600 hover:text-primary-700 font-medium mb-4 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-800 transition-colors mb-3 min-h-0"
+          aria-label="Back to search"
         >
-          <ArrowLeft className="h-5 w-5 mr-1" />
-          Back to Search
+          <ArrowLeft className="w-4 h-4" />
+          Back
         </button>
 
-        <div className="card">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-            <div className="mb-4 md:mb-0">
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                {from} → {to}
-              </h1>
-              <p className="text-gray-600 flex items-center">
-                <MapPin className="h-4 w-4 mr-1" />
-                {filteredResults.length} buses found
-              </p>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleSaveFavorite}
-                className="btn-secondary flex items-center"
-              >
-                <Heart className="h-4 w-4 mr-2" />
-                Save Route
-              </button>
-              <button
-                onClick={() => setShowMap(!showMap)}
-                className="btn-primary flex items-center"
-              >
-                <MapPin className="h-4 w-4 mr-2" />
-                {showMap ? 'Hide Map' : 'Show Map'}
-              </button>
-            </div>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-lg font-bold text-neutral-800 leading-tight">
+              {from} → {to}
+            </h1>
+            <p className="text-xs text-neutral-400 mt-0.5">
+              {loading ? 'Searching…' : `${filteredResults.length} result${filteredResults.length !== 1 ? 's' : ''}`}
+            </p>
           </div>
-
-          {/* Filter */}
-          <div className="mt-4 flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-600" />
-            <select
-              className="input-field py-2"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-            >
-              <option value="all">All Types</option>
-              <option value="KSRTC">KSRTC</option>
-              <option value="Private">Private</option>
-              <option value="Fast">Fast</option>
-              <option value="Super Fast">Super Fast</option>
-              <option value="Ordinary">Ordinary</option>
-            </select>
-          </div>
+          <button
+            id="toggle-map-button"
+            onClick={() => setShowMap(v => !v)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors min-h-0 ${
+              showMap
+                ? 'bg-navy-800 text-white border-navy-800'
+                : 'bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300'
+            }`}
+            aria-pressed={showMap}
+          >
+            <Map className="w-4 h-4" />
+            {showMap ? 'Hide map' : 'Show map'}
+          </button>
         </div>
       </div>
 
-      {/* Map View */}
-      {showMap && (
-        <div className="mb-6 animate-slide-up">
+      {/* ── Sticky filter bar ────────────────────────────────────────────────── */}
+      <div className="sticky-filter-bar -mx-4 px-4 py-2.5 mb-4 flex items-center gap-3">
+        <Filter className="w-4 h-4 text-white/50 flex-shrink-0" aria-hidden="true" />
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1">
+          {BUS_TYPES.map(t => (
+            <button
+              key={t}
+              onClick={() => setFilterType(t)}
+              className={`flex-shrink-0 px-3 py-1 rounded text-xs font-medium transition-colors min-h-0 ${
+                filterType === t
+                  ? 'bg-amber-400 text-navy-800'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {t === 'all' ? 'All types' : t}
+            </button>
+          ))}
+        </div>
+        {filterType !== 'all' && (
+          <button
+            onClick={() => setFilterType('all')}
+            className="flex-shrink-0 text-white/50 hover:text-white transition-colors min-h-0"
+            aria-label="Clear filter"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      {/* ── Map view ─────────────────────────────────────────────────────────── */}
+      {showMap && !loading && (
+        <div className="mb-5 animate-fade-in">
           <RouteMap from={from} to={to} results={filteredResults} />
         </div>
       )}
 
-      {/* Results */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="card text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Searching for buses...</p>
-          </div>
-        ) : filteredResults.length === 0 ? (
-          <div className="card text-center py-12">
-            <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Buses Found</h3>
-            <p className="text-gray-600 mb-4">
-              We couldn't find any buses for this route. Please try a different search.
-            </p>
-            <button onClick={() => navigate('/')} className="btn-primary">
-              New Search
-            </button>
-          </div>
-        ) : (
-          filteredResults.map((result, index) => (
+      {/* ── Results grid ─────────────────────────────────────────────────────── */}
+      {loading ? (
+        <div className="transit-card px-6 py-12 text-center animate-fade-in">
+          <div className="inline-block w-8 h-8 border-2 border-navy-800/20 border-t-navy-800 rounded-full animate-spin mb-3" />
+          <p className="text-sm text-neutral-500">Searching for buses…</p>
+        </div>
+      ) : filteredResults.length === 0 ? (
+        <div className="transit-card px-6 py-12 text-center animate-fade-in">
+          <AlertCircle className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
+          <p className="text-sm font-semibold text-neutral-700 mb-1">No buses found</p>
+          <p className="text-xs text-neutral-400 mb-4">
+            {filterType !== 'all'
+              ? `No ${filterType} buses on this route. Try a different bus type.`
+              : 'We couldn\'t find buses for this route. Check the stop names or try "Show all buses".'}
+          </p>
+          <button onClick={() => navigate('/')} className="btn-navy text-sm">
+            New search
+          </button>
+        </div>
+      ) : (
+        /* Responsive grid: 1-col mobile → 2-col tablet+ */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {filteredResults.map((result, index) => (
             <BusCard key={index} result={result} />
-          ))
-        )}
-      </div>
-
-      {/* Additional Info */}
-      {filteredResults.length > 0 && (
-        <div className="mt-8 card bg-blue-50 border-2 border-blue-200">
-          <div className="flex items-start">
-            <TrendingUp className="h-6 w-6 text-blue-600 mr-3 mt-1" />
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-1">Travel Tips</h3>
-              <ul className="text-sm text-gray-700 space-y-1">
-                <li>• Arrive at the bus stop 5-10 minutes before scheduled time</li>
-                <li>• Keep exact change ready for faster boarding</li>
-                <li>• Check for alternative routes during peak hours</li>
-              </ul>
-            </div>
-          </div>
+          ))}
         </div>
       )}
     </div>
