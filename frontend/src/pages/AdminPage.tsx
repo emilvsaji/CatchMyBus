@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Bus, MapPin, Save, AlertCircle, X, Edit2, Trash2, Search, Copy } from 'lucide-react';
+import { Plus, Bus, Save, AlertCircle, X, Edit2, Trash2, Search, Copy } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
 
@@ -79,7 +79,7 @@ const AdminPage = () => {
     const parsedTimings: StopTiming[] = Object.keys(grouped).map(stop => ({ stopName: stop, times: grouped[stop] }));
     
     setBusForm({
-      busName: bus.busName,
+      busName: (bus.busName || '').toUpperCase(),
       busNumber: (bus as any).busNumber || '',
       from: bus.from,
       via: bus.via || '',
@@ -102,11 +102,11 @@ const AdminPage = () => {
     }
 
     const busData = {
-      busName: busForm.busName,
-      busNumber: busForm.busNumber,
-      from: busForm.from,
-      via: busForm.via,
-      to: busForm.to,
+      busName: busForm.busName.toUpperCase().trim(),
+      busNumber: busForm.busNumber.trim(),
+      from: busForm.from.trim(),
+      via: busForm.via.trim(),
+      to: busForm.to.trim(),
       type: busForm.type,
       route: stopTimings.map(st => st.stopName.trim()),
       timings: stopTimings.flatMap(st => st.times.map(t => ({ stopName: st.stopName.trim(), arrivalTime: `${t.arrivalTime} ${t.period}`, departureTime: `${t.arrivalTime} ${t.period}` })))
@@ -159,7 +159,7 @@ const AdminPage = () => {
     setEditingBus(null);
     setActiveTab('buses');
     setBusForm({
-      busName: `${bus.busName} (copy)`,
+      busName: `${(bus.busName || '').toUpperCase()} (COPY)`,
       busNumber: (bus as any).busNumber || '',
       from: bus.from,
       via: bus.via || '',
@@ -258,11 +258,11 @@ const AdminPage = () => {
     }
 
     const busData = {
-      busName: busForm.busName,
-      busNumber: busForm.busNumber,
-      from: busForm.from,
-      via: busForm.via,
-      to: busForm.to,
+      busName: busForm.busName.toUpperCase().trim(),
+      busNumber: busForm.busNumber.trim(),
+      from: busForm.from.trim(),
+      via: busForm.via.trim(),
+      to: busForm.to.trim(),
       type: busForm.type,
       route: stopTimings.map(st => st.stopName.trim()),
       timings: stopTimings.flatMap(st => st.times.map(t => ({ stopName: st.stopName.trim(), arrivalTime: `${t.arrivalTime} ${t.period}`, departureTime: `${t.arrivalTime} ${t.period}` })))
@@ -322,34 +322,37 @@ const AdminPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-2 mb-6">
+        <div className="flex items-center space-x-2 mb-6">
           <button
-            onClick={() => setActiveTab('buses')}
-            className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+            onClick={() => {
+              setEditingBus(null);
+              setActiveTab('buses');
+            }}
+            className={`flex items-center px-5 py-2.5 rounded-lg font-medium transition-colors text-sm min-h-0 ${
               activeTab === 'buses'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-navy-800 text-white'
+                : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'
             }`}
           >
-            <Bus className="h-5 w-5 mr-2" />
+            <Plus className="h-4 w-4 mr-2" />
             Add Bus
           </button>
           <button
             onClick={() => setActiveTab('stops')}
-            className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+            className={`flex items-center px-5 py-2.5 rounded-lg font-medium transition-colors text-sm min-h-0 ${
               activeTab === 'stops'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? 'bg-navy-800 text-white'
+                : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'
             }`}
           >
-            <MapPin className="h-5 w-5 mr-2" />
+            <Bus className="h-4 w-4 mr-2" />
             Manage Bus
           </button>
         </div>
 
         {/* Bus Form */}
         {activeTab === 'buses' && (
-          <div className="card animate-slide-up">
+          <div className="transit-card p-6 animate-slide-up">
             <form onSubmit={handleAddBus} className="space-y-6">
               {/* Bus Name */}
               <div>
@@ -358,10 +361,10 @@ const AdminPage = () => {
                 </label>
                 <input
                   type="text"
-                  className="input-field"
-                  placeholder="e.g., Trivandrum - Kochi Express"
+                  className="input-field uppercase tracking-wide"
+                  placeholder="e.g., TRIVANDRUM - KOCHI EXPRESS"
                   value={busForm.busName}
-                  onChange={(e) => setBusForm({ ...busForm, busName: e.target.value })}
+                  onChange={(e) => setBusForm({ ...busForm, busName: e.target.value.toUpperCase() })}
                   required
                 />
               </div>
@@ -571,10 +574,10 @@ const AdminPage = () => {
                     </label>
                     <input
                       type="text"
-                      className="input-field"
-                      placeholder="e.g., Trivandrum - Kochi Express"
+                      className="input-field uppercase tracking-wide"
+                      placeholder="e.g., TRIVANDRUM - KOCHI EXPRESS"
                       value={busForm.busName}
-                      onChange={(e) => setBusForm({ ...busForm, busName: e.target.value })}
+                      onChange={(e) => setBusForm({ ...busForm, busName: e.target.value.toUpperCase() })}
                       required
                     />
                   </div>
@@ -764,8 +767,23 @@ const AdminPage = () => {
 
             {/* List All Buses */}
             {!editingBus && (
-              <div className="card">
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">All Buses</h2>
+              <div className="transit-card p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800">Manage Buses</h2>
+                    <p className="text-xs text-neutral-500 mt-0.5">View and edit configured bus schedules</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setEditingBus(null);
+                      setActiveTab('buses');
+                    }}
+                    className="btn-amber text-xs py-2 px-3 flex items-center gap-1.5 min-h-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Bus
+                  </button>
+                </div>
                 
                 {/* Search Bar */}
                 <div className="mb-6">
@@ -799,11 +817,11 @@ const AdminPage = () => {
                     {filteredBuses.map((bus) => (
                       <div
                         key={bus.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors"
+                        className="border border-gray-200 rounded-lg p-4 hover:border-navy-400 transition-colors"
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2 uppercase tracking-wide">
                               {bus.busName}
                             </h3>
                             <div className="text-sm text-gray-600 space-y-1">

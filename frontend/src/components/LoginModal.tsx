@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Mail, Lock, User as UserIcon, AlertCircle } from 'lucide-react';
+import { X, Mail, Lock, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -76,46 +76,35 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-slide-up">
+    <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full animate-slide-up border border-neutral-200 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {isLogin ? 'Login' : 'Create Account'}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50/50">
+          <h2 className="text-lg font-bold text-neutral-800">
+            {isLogin ? 'Log in to CatchMyBus' : 'Create an Account'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors min-h-0"
+            aria-label="Close modal"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5" />
           </button>
         </div>
-
-        {/* Admin Info */}
-        {isLogin && (
-          <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-2">
-            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-blue-800">
-              <p className="font-semibold mb-1">Admin Access:</p>
-              <p>Email: admin@catchmybus.com</p>
-              <p>Password: (your admin password)</p>
-            </div>
-          </div>
-        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Mail className="h-4 w-4 inline mr-1" />
-              Email Address
+            <label className="block text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+              <Mail className="h-3.5 w-3.5 inline mr-1 opacity-70" />
+              Email address
             </label>
             <input
               type="email"
               required
               className="input-field"
-              placeholder="your@email.com"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -123,8 +112,8 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Lock className="h-4 w-4 inline mr-1" />
+            <label className="block text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+              <Lock className="h-3.5 w-3.5 inline mr-1 opacity-70" />
               Password
             </label>
             <input
@@ -140,9 +129,9 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
           {/* Confirm Password (Register only) */}
           {!isLogin && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Lock className="h-4 w-4 inline mr-1" />
-                Confirm Password
+              <label className="block text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-1.5">
+                <Lock className="h-3.5 w-3.5 inline mr-1 opacity-70" />
+                Confirm password
               </label>
               <input
                 type="password"
@@ -156,31 +145,34 @@ const LoginModal = ({ isOpen, onClose }: LoginModalProps) => {
           )}
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full flex items-center justify-center"
-          >
-            {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-            ) : (
-              <>
-                <UserIcon className="h-5 w-5 mr-2" />
-                {isLogin ? 'Login' : 'Register'}
-              </>
-            )}
-          </button>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-amber w-full justify-center text-sm font-semibold py-3 rounded-lg shadow-sm hover:shadow transition-all min-h-[44px]"
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-navy-800 border-t-transparent"></div>
+              ) : (
+                <>
+                  <UserIcon className="h-4 w-4" />
+                  <span>{isLogin ? 'Log in' : 'Create Account'}</span>
+                </>
+              )}
+            </button>
+          </div>
         </form>
 
         {/* Switch Mode */}
-        <div className="px-6 pb-6 text-center">
-          <p className="text-sm text-gray-600">
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
+        <div className="px-6 pb-6 text-center border-t border-neutral-100 pt-4 bg-neutral-50/50">
+          <p className="text-xs text-neutral-500">
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
             <button
+              type="button"
               onClick={switchMode}
-              className="text-primary-600 font-semibold hover:text-primary-700 transition-colors"
+              className="text-navy-800 font-semibold hover:text-amber-500 transition-colors ml-1 inline min-h-0"
             >
-              {isLogin ? 'Register' : 'Login'}
+              {isLogin ? 'Create one' : 'Log in'}
             </button>
           </p>
         </div>

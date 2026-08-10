@@ -28,15 +28,15 @@
 CatchMyBus provides daily commuters, students, working professionals, and travelers in Kerala with reliable, real-time bus schedules, departure and arrival timings, intermediate stop breakdowns, automated fare calculation, and interactive route mapping.
 
 ### Key Value Pillars
-- **Transit-Board Interface:** High-density, professional transit board presentation focusing on readability, tabular alignment, and clean visual hierarchy.
+- **Transit-Board Interface:** High-density, professional transit board presentation focusing on readability, uppercase bus names, tabular alignment, and clean visual hierarchy.
 - **Mobile-First Experience:** Built with a strict 375px+ responsive grid, touch-friendly hit areas ($\ge 44\text{px}$), sticky filter bars, and minimal scrolling friction.
-- **Accurate Timing & Fare Engine:** Smart multi-criteria matching algorithm with automated fare approximation and distance calculations.
+- **Accurate Timing & Fare Engine:** Smart multi-criteria matching algorithm with exact/word-boundary stop matching, automated fare approximation, and distance calculations.
 
 ---
 
 ## 🎨 Design System, Colors & Visual Aesthetics
 
-The application uses a **professional transit design system** anchored in deep transit navy and signal amber, avoiding childish saturated colors in favor of desaturated badges, tabular figures, and border-based elevations.
+The application uses a **professional transit design system** anchored in deep transit navy and signal amber, avoiding childish saturated colors in favor of desaturated badges, tabular figures, uppercase bus titles, and border-based elevations.
 
 ### 1. Color Palette & Hex Tokens
 
@@ -94,7 +94,7 @@ The application uses a **professional transit design system** anchored in deep t
 |---|---|---|
 | **Origin Stop Pin** | `#1B7F4C` | Deep green SVG pin & route progress start dot |
 | **Destination Stop Pin** | `#B3261E` | Deep red SVG pin & route progress end dot |
-| **Intermediate Stop Marker** | `#0B2545` | White circular badge with navy border & stop number |
+| **User Stop Tag Pill** | `#F5A623` | Amber-400/20 background, amber-800 text, border chip for `Your From` & `Your To` |
 | **Partial Match Notice** | `#F5A623` | Amber-400 2px left border on `#F5A623`/10 background |
 | **Live Status Dot** | `#F5A623` | 6px amber dot (`.live-dot`) |
 
@@ -103,12 +103,13 @@ The application uses a **professional transit design system** anchored in deep t
 ### 2. Typography & Tabular Numerals
 - **Primary Font Family:** `'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
 - **Monospace Font Family:** `'JetBrains Mono', 'Fira Code', 'Consolas', monospace` (used for bus registration numbers)
-- **Tabular Figures:** `font-variant-numeric: tabular-nums;` is applied across all timing, fare, distance, and duration data to ensure strict character alignment like transit departure boards.
+- **Bus Name Styling:** Rendered in full uppercase with `tracking-wide` (`text-transform: uppercase`) for a transit board appearance.
+- **Tabular Figures:** `font-variant-numeric: tabular-nums;` is applied across all timing, fare, distance, and duration data.
 
 ---
 
 ### 3. Keyframe Animations & Micro-Interactions
-Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-preference)` to respect accessibility:
+Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-preference)`:
 ```css
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -233,11 +234,11 @@ frontend/
 ├── src/
 │   ├── components/
 │   │   ├── layout/
-│   │   │   ├── Header.tsx           # 56px sticky navy navbar with logo + auth button
+│   │   │   ├── Header.tsx           # 56px sticky navy navbar with logo + auth avatar dropdown
 │   │   │   └── Footer.tsx           # Compact navy footer with brand, contact & copyright
 │   │   ├── AutocompleteInput.tsx    # Accessible stop input with keyboard navigation (↑↓ Enter Esc)
-│   │   ├── BusCard.tsx              # Transit-board row card with flat segmented route & inline bookmark
-│   │   ├── LoginModal.tsx           # Firebase Auth popup for login/registration
+│   │   ├── BusCard.tsx              # Transit-board row card with flat segmented route & stacked DEPARTS/ARRIVES
+│   │   ├── LoginModal.tsx           # Firebase Auth popup styled with btn-amber
 │   │   ├── ProtectedRoute.tsx       # Route guard redirecting non-admins
 │   │   └── RouteMap.tsx             # React Leaflet map with custom SVG pins & muted tiles
 │   ├── config/
@@ -246,13 +247,13 @@ frontend/
 │   ├── contexts/
 │   │   └── AuthContext.tsx          # Auth provider tracking currentUser & isAdmin status
 │   ├── pages/
-│   │   ├── AdminPage.tsx            # Full-featured Bus & Stop CRUD management
+│   │   ├── AdminPage.tsx            # Bus & Stop CRUD management with real-time uppercase bus names
 │   │   ├── DebugPage.tsx            # Diagnostic utility for API connectivity
-│   │   ├── HomePage.tsx             # Navy hero, overlapping search card, 3-feature strip, inline results
+│   │   ├── HomePage.tsx             # Navy hero, overlapping search card, desktop feature strip, inline results
 │   │   └── SearchResults.tsx        # Sticky filter bar, responsive 1-col to 2-col results grid, map toggle
 │   ├── types/
 │   │   └── index.ts                 # Central TypeScript interfaces
-│   ├── App.tsx                      # Clean React Router config (no dead routes)
+│   ├── App.tsx                      # Clean React Router config
 │   ├── main.tsx                     # React DOM root render with Toaster
 │   └── index.css                    # Design tokens, component classes, tabular-nums utilities
 ├── public/                          # Static assets
@@ -266,45 +267,32 @@ frontend/
 ### 2. Component Highlights
 
 #### `Header.tsx`
-- **Slim Sticky Bar:** 56px height (`h-14`), deep navy `#0B2545` background with hairline bottom border.
-- **Logo:** Amber bus icon block + bold white wordmark with subtle "Kerala" badge.
-- **Single Auth Button:** Amber "Log in" button when signed out; user avatar circle with dropdown menu (Admin link + Sign out) when signed in.
-- **No Hamburger Menu:** Kept clean without mobile collapse since there are no redundant top-level links.
+- **Slim Sticky Bar:** 56px height (`h-14`), deep navy `#0B2545` background.
+- **Clean Logo:** Amber bus icon block + bold white "CatchMyBus" wordmark.
+- **Auth Controls:** Amber "Log in" button when logged out; avatar circle with dropdown when logged in.
+- **Admin Access:** "Admin panel" link surfaces inside the avatar dropdown menu for admins (above "Sign out").
 
 #### `BusCard.tsx`
-- **Transit-Board Row Layout:** Dense horizontal format with `shadow-transit` border elevation.
-- **Left Column:** Desaturated bus-type badge (`.badge-ksrtc`, `.badge-private`, etc.) + bus registration number in monospace font.
-- **Center Column:** Bus name, flat segmented route progress line (`SegmentedRoute` component with origin dot, dashed line, via stop label, and destination dot), stop names, departure $\rightarrow$ arrival in `tabular-nums`, and duration.
-- **Right Column:** Large bold fare in INR (`₹`) + total distance in km.
-- **Inline Bookmark Button:** Bookmark icon in top right that saves the route directly via `POST /api/favorites` with toast feedback (no separate page required).
-- **Accordion Timeline:** Clean hairline top border revealing vertical stop timeline with start/destination indicator dots and scheduled times.
-- **Inline Notices:** Partial-match notice with amber left border; estimated times notice in neutral gray.
+- **Transit-Board Row Layout:** Horizontal format with `shadow-transit` border elevation.
+- **Uppercase Bus Names:** Rendered in full uppercase with `tracking-wide` (`text-transform: uppercase`).
+- **Stacked Timing Display:** 3-column block with small uppercase labels:
+  - *DEPARTS:* Departure time in `tabular-nums` + stop name.
+  - *DURATION CONNECTOR:* Thin vertical line + trip duration (`Xh Ym` / `Ym` / `↓`).
+  - *ARRIVES:* Arrival time in `tabular-nums` + stop name.
+- **Inline Bookmark:** Top-right bookmark icon posting to `/api/favorites`.
+- **Intermediate Stop Timeline:** Vertical timeline with exact/word-boundary stop matching (`isStopMatch`). Displays amber chip tags: `Your From`, `Your To`, `Start`, `End`.
 
-#### `RouteMap.tsx`
-- **Custom SVG Markers:** Origin pin in deep green (`#1B7F4C`), Destination pin in deep red (`#B3261E`), numbered stop badges in white with navy border (`#0B2545`).
-- **Muted Tile Styling:** CSS filter `.map-muted` (`saturate(0.82) brightness(1.03)`) for a clean, non-distracting map aesthetic.
-- **Navy Route Polyline:** `#0B2545` dash-array line connecting all intermediate stops.
-- **Synchronous Coordinates Lookup:** Fast dictionary lookup covering 30+ Kerala transit locations.
+#### `AdminPage.tsx`
+- **Add Bus Action:** Action button `+ Add Bus` beside the "Manage Buses" section header and top tab row.
+- **Real-Time Uppercase:** Bus name fields automatically convert typed text to uppercase in real time (`e.target.value.toUpperCase()`).
 
-#### `AutocompleteInput.tsx`
-- **Full Keyboard Accessibility:** Supports `ArrowDown`, `ArrowUp`, `Enter`, and `Escape` keys.
-- **ARIA Attributes:** `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded`, and `aria-activedescendant`.
-- **Navy Active Selection:** Selected dropdown item highlighted with navy `#0B2545` background and white text.
+#### `LoginModal.tsx`
+- **Clean Modal Shell:** Styled with `btn-amber` primary CTA button.
+- **Removed Hardcoded Credentials:** Removed static admin email/password hint box.
 
-#### `HomePage.tsx`
-- **Navy Hero Band:** Deep navy `#0B2545` background with amber accent heading.
-- **Overlapping Search Card:** Elevated card positioned over the hero border with inputs for From, To, Departure Time, Bus Type, and "Show all buses" checkbox.
-- **Inline Results Preview:** Shows up to 3 matching bus cards directly on the home view with a "View all $\rightarrow$" action.
-- **Compact 3-Feature Strip:** Plain, fluff-free feature highlights:
-  1. *Arrival times* — See departure and arrival times for any route.
-  2. *Route on map* — View the full route with intermediate stops on a live map.
-  3. *Save routes* — Bookmark any result directly from the card.
-
-#### `SearchResults.tsx`
-- **Sticky Filter Bar:** Sticky bar under the navbar with horizontal scrolling bus-type chips (`All types`, `KSRTC`, `Private`, `Fast`, `Super Fast`, `Ordinary`) and clear filter action.
-- **Map View Toggle:** Shows/hides `RouteMap` with active button state.
-- **Responsive Results Grid:** 1 column on mobile, 2 columns on tablet and desktop (`grid-cols-1 md:grid-cols-2`).
-- **Clean Empty State:** Minimal no-results card with "New search" button.
+#### `HomePage.tsx` & `SearchResults.tsx`
+- **Desktop-Only Feature Strip:** 3-card feature strip hidden on mobile (`hidden sm:block`) for mobile search focus.
+- **Refined Bottom Spacing:** Reduced bottom padding (`pb-8`) and grid margins (`mb-6`) above the footer.
 
 ---
 
@@ -318,7 +306,7 @@ backend/
 │   │   └── firebase.ts              # Firebase Admin SDK initialization
 │   ├── routes/
 │   │   ├── adminRoutes.ts           # Admin bus/stop CRUD endpoints
-│   │   ├── busRoutes.ts             # Bus search, stops & nearby APIs
+│   │   ├── busRoutes.ts             # Bus search (exact/word-boundary stop index matching)
 │   │   ├── favoriteRoutes.ts        # User favorite routes CRUD
 │   │   └── feedbackRoutes.ts        # Feedback submission & status updates
 │   ├── utils/
@@ -335,19 +323,19 @@ backend/
 #### **Bus Routes (`/api/buses`)**
 | Method | Endpoint | Query / Body Parameters | Response Format | Description |
 |---|---|---|---|---|
-| `GET` | `/api/buses/search` | `from` (string, req)<br>`to` (string, req)<br>`type` (string, opt)<br>`time` (string, opt: `08:30 AM` / `14:30`)<br>`showAll` (boolean, opt) | `{ success: true, count: number, data: BusResult[] }` | Search engine matching origin, destination, intermediate routes, timing availability, distance and fare calculation. |
+| `GET` | `/api/buses/search` | `from` (string, req)<br>`to` (string, req)<br>`type` (string, opt)<br>`time` (string, opt)<br>`showAll` (boolean, opt) | `{ success: true, count: number, data: BusResult[] }` | Search engine with word-boundary stop matching, distance, fare, and timing calculation. |
 | `GET` | `/api/buses/stops` | None | `{ success: true, count: number, data: BusStop[] }` | Returns all registered bus stops for autocomplete. |
-| `GET` | `/api/buses/stops/nearby` | `lat` (number)<br>`lng` (number)<br>`radius` (number, default: 5km) | `{ success: true, count: number, data: BusStop[] }` | Spatial lookup of nearby bus stops within radius using Haversine calculation. |
+| `GET` | `/api/buses/stops/nearby` | `lat` (number)<br>`lng` (number)<br>`radius` (number) | `{ success: true, count: number, data: BusStop[] }` | Spatial lookup of nearby bus stops within radius using Haversine calculation. |
 
 #### **Admin Management Routes (`/api/admin`)**
 | Method | Endpoint | Payload / Params | Description |
 |---|---|---|---|
 | `GET` | `/api/admin/buses` | None | Retrieves all bus records for admin overview. |
-| `POST` | `/api/admin/buses` | `{ busName, from, via, to, type, route: string[], timings: BusTiming[] }` | Registers a new bus route with timing schedules. |
+| `POST` | `/api/admin/buses` | `{ busName, from, via, to, type, route: string[], timings: BusTiming[] }` | Registers a new bus route (auto-uppercased name). |
 | `PUT` | `/api/admin/buses/:id` | Partial bus object payload | Updates existing bus information. |
 | `DELETE` | `/api/admin/buses/:id` | `:id` path parameter | Permanently deletes a bus from Firestore. |
 | `POST` | `/api/admin/stops` | `{ name, district, location: { lat, lng } }` | Adds a new official bus stop. |
-| `GET` | `/api/admin/debug/buses` | `limit` (number, opt: default 10) | Diagnostic inspection of raw Firestore documents. |
+| `GET` | `/api/admin/debug/buses` | `limit` (number, opt) | Diagnostic inspection of raw Firestore documents. |
 
 #### **User Favorites Routes (`/api/favorites`)**
 | Method | Endpoint | Payload / Params | Description |
@@ -355,18 +343,6 @@ backend/
 | `GET` | `/api/favorites` | None | Retrieves saved routes for the user. |
 | `POST` | `/api/favorites` | `{ fromStop: string, toStop: string }` | Saves a route to user's favorites (triggered via inline card bookmark). |
 | `DELETE` | `/api/favorites/:id` | `:id` path parameter | Removes a saved route. |
-
-#### **Feedback & Reporting Routes (`/api/feedback`)**
-| Method | Endpoint | Payload / Params | Description |
-|---|---|---|---|
-| `POST` | `/api/feedback` | `{ busId, message, type: 'timing'\|'route'\|'other' }` | Commuter feedback submission. |
-| `GET` | `/api/feedback` | None | Retrieves all feedback tickets (Admin). |
-| `PUT` | `/api/feedback/:id` | `{ status: 'pending'\|'reviewed'\|'resolved' }` | Updates feedback processing status. |
-
-#### **System Health Route**
-| Method | Endpoint | Response | Description |
-|---|---|---|---|
-| `GET` | `/health` | `{ status: 'ok', message: 'CatchMyBus API is running' }` | Heartbeat endpoint for cloud health checks. |
 
 ---
 
@@ -389,12 +365,12 @@ interface BusStop {
 interface Bus {
   id: string;
   busNumber: string;          // e.g. "KL-01-AB-1234"
-  busName: string;            // e.g. "Trivandrum - Kochi Express"
+  busName: string;            // e.g. "TRIVANDRUM - KOCHI EXPRESS"
   type: 'KSRTC' | 'Private' | 'Fast' | 'Super Fast' | 'Ordinary';
   from?: string;              // Starting terminus
   to?: string;                // Ending terminus
   via?: string;               // Optional intermediate landmark string
-  route: string[];            // Array of ordered stop names: ["Stop A", "Stop B", "Stop C"]
+  route: string[];            // Array of ordered stop names
   timings: BusTiming[];       // Array of timing objects
   fare?: number;              // Pre-calculated base fare (optional)
   createdAt: Date;
@@ -407,267 +383,41 @@ interface BusTiming {
   departureTime: string;      // e.g. "06:15 AM" or "06:15"
   dayOfWeek?: string[];       // e.g. ["Monday", "Tuesday", ...]
 }
-
-// 3. User Favorites Document (`favorites` collection)
-interface UserFavorite {
-  id: string;
-  userId: string;             // User UID from Firebase Auth
-  fromStop: string;           // Origin stop name
-  toStop: string;             // Destination stop name
-  createdAt: Date;
-}
-
-// 4. Feedback Document (`feedback` collection)
-interface Feedback {
-  id: string;
-  userId?: string;            // User UID (if logged in)
-  busId: string;              // Referenced Bus ID
-  message: string;            // Feedback/report text
-  type: 'timing' | 'route' | 'other';
-  status: 'pending' | 'reviewed' | 'resolved';
-  createdAt: Date;
-}
-```
-
-### Firestore Security Rules (`firestore.rules`)
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    
-    // Bus stops - public read, admin write
-    match /stops/{stopId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // Buses - public read, admin write
-    match /buses/{busId} {
-      allow read: if true;
-      allow write: if request.auth != null;
-    }
-    
-    // Favorites - authenticated user access
-    match /favorites/{favoriteId} {
-      allow read, create, delete: if true;
-    }
-    
-    // Feedback - public create, admin read/update
-    match /feedback/{feedbackId} {
-      allow create: if true;
-      allow read, update: if request.auth != null;
-    }
-  }
-}
 ```
 
 ---
 
 ## 🧮 Algorithms & Calculation Logic
 
-### 1. Distance Calculation Engine
-1. **Primary Free Geocoding (Nominatim & Haversine):**
-   - Coordinates are resolved via OpenStreetMap Nominatim: `https://nominatim.openstreetmap.org/search?q={location}, Kerala, India&format=json&limit=1`.
-   - Great-circle distance is calculated using the **Haversine Formula**:
-     $$\Delta \text{lat} = \text{lat}_2 - \text{lat}_1$$
-     $$\Delta \text{lng} = \text{lng}_2 - \text{lng}_1$$
-     $$a = \sin^2\left(\frac{\Delta\text{lat}}{2}\right) + \cos(\text{lat}_1)\cos(\text{lat}_2)\sin^2\left(\frac{\Delta\text{lng}}{2}\right)$$
-     $$c = 2 \cdot \text{atan2}\left(\sqrt{a}, \sqrt{1-a}\right)$$
-     $$d = R \cdot c \quad (R = 6371\text{ km})$$
-   - An additional **25% road-winding multiplier** ($d_{\text{road}} = d \times 1.25$) is added to convert straight-line displacement into realistic Kerala road distance.
-2. **Fallback Index-Based Estimation:**
-   $$\text{Distance (km)} = |\text{toIndex} - \text{fromIndex}| \times 15\text{ km}$$
+### 1. Stop Matching Engine (`isStopMatch` & `matchStopIndex`)
+Prevents false-positive substring matches (e.g. searching "Pala" will not match "Panackapalam"):
+```typescript
+const normalizeStop = (s: string) =>
+  (s || '')
+    .toLowerCase()
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-### 2. Travel Duration Estimation
-$$\text{Duration (minutes)} = \text{round}\left(\frac{\text{Distance (km)}}{\text{Average Speed (40 km/h)}} \times 60\right)$$
+const isStopMatch = (stopCandidate: string, targetQuery: string): boolean => {
+  const normCandidate = normalizeStop(stopCandidate);
+  const normTarget = normalizeStop(targetQuery);
+  if (!normCandidate || !normTarget) return false;
 
-### 3. Bus Fare Calculation Rates
-$$\text{Fare (INR)} = \text{round}(\text{Distance (km)} \times \text{Base Rate})$$
+  // 1. Exact match
+  if (normCandidate === normTarget) return true;
 
-| Bus Service Category | Base Rate per Kilometer | Example (50 km Route) |
-|---|---|---|
-| **Ordinary** | ₹1.00 / km | ₹50 |
-| **KSRTC (Standard)** | ₹1.20 / km | ₹60 |
-| **Private (City/Line)**| ₹1.50 / km | ₹75 |
-| **Fast Passenger** | ₹1.80 / km | ₹90 |
-| **Super Fast Express**| ₹2.20 / km | ₹110 |
+  // 2. Word-boundary match
+  const wordRegex = new RegExp(`(^|\\s)${normTarget}(\\s|$)`, 'i');
+  if (wordRegex.test(normCandidate)) return true;
 
-### 4. Kerala Vehicle Registration Validator
-$$\text{Regex Pattern: } \texttt{\textasciicircum KL-\textbackslash d\{2\}-[A-Z]\{2\}-\textbackslash d\{4\}\$}$$
-- Example Valid: `KL-01-AB-1234`, `KL-07-BC-5678`, `KL-11-CD-9012`
+  // 3. Reverse word-boundary match
+  const reverseWordRegex = new RegExp(`(^|\\s)${normCandidate}(\\s|$)`, 'i');
+  if (reverseWordRegex.test(normTarget)) return true;
 
----
-
-## 🔐 Environment Variables Reference
-
-### 1. Frontend Environment (`frontend/.env`)
-```env
-# Backend API Base URL
-VITE_API_URL=http://localhost:5000/api
-
-# Firebase Web App Credentials (from Firebase Project Settings -> General -> Web Apps)
-VITE_FIREBASE_API_KEY=AIzaSy...
-VITE_FIREBASE_AUTH_DOMAIN=catchmybus-kerala.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=catchmybus-kerala
-VITE_FIREBASE_STORAGE_BUCKET=catchmybus-kerala.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
-VITE_FIREBASE_APP_ID=1:123456789012:web:abcdef123456
-VITE_FIREBASE_MEASUREMENT_ID=G-XXXXXXXXXX
+  return false;
+};
 ```
-
-### 2. Backend Environment (`backend/.env`)
-```env
-# Server Port & Runtime Mode
-PORT=5000
-NODE_ENV=development
-
-# Allowed CORS Origins (comma-separated list, without trailing slashes)
-FRONTEND_URL=http://localhost:3000,http://localhost:5173,https://catch-my-bus.vercel.app
-
-# Firebase Admin SDK Credentials (from Project Settings -> Service Accounts -> Generate new private key)
-FIREBASE_PROJECT_ID=catchmybus-kerala
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@catchmybus-kerala.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...\n-----END PRIVATE KEY-----\n"
-```
-
----
-
-## 🚀 Step-by-Step Setup & Installation Guide
-
-### Prerequisites
-- **Node.js**: `v18.0.0` or higher
-- **npm**: `v9.0.0` or higher
-- **Firebase Account**: Free Spark plan on [Firebase Console](https://console.firebase.google.com/)
-
-### Quick Install & Run (Root)
-```bash
-# 1. Clone repository
-git clone https://github.com/your-username/CatchMyBus.git
-cd CatchMyBus
-
-# 2. Install all root, frontend, and backend dependencies
-npm run install:all
-
-# 3. Configure environment variables in frontend/.env and backend/.env (see templates above)
-
-# 4. Start both frontend and backend concurrently
-npm run dev
-```
-
-### Standalone Installation (PowerShell / Windows)
-```powershell
-# Install frontend
-cd frontend
-npm install
-cd ..
-
-# Install backend
-cd backend
-npm install
-cd ..
-
-# Run in separate terminal windows
-# Terminal 1: Backend (Port 5000)
-cd backend
-npm run dev
-
-# Terminal 2: Frontend (Port 5173 / 3000)
-cd frontend
-npm run dev
-```
-
----
-
-## 📦 Sample Seed Data Reference
-
-Use the Admin Panel (`/admin`) or import `sample-data.js` to seed the database with initial Kerala bus routes and transit hubs.
-
-### 1. Sample Transit Hubs (`sampleBusStops`)
-| Stop Name | District | Latitude | Longitude |
-|---|---|---|---|
-| **Thiruvananthapuram Central Bus Station** | Thiruvananthapuram | `8.5241` | `76.9366` |
-| **Kollam KSRTC Bus Stand** | Kollam | `8.8932` | `76.6141` |
-| **Alappuzha Bus Stand** | Alappuzha | `9.4981` | `76.3388` |
-| **Kochi KSRTC Bus Stand** | Ernakulam | `9.9312` | `76.2673` |
-| **Thrissur KSRTC Bus Stand** | Thrissur | `10.5276` | `76.2144` |
-| **Kozhikode KSRTC Bus Stand** | Kozhikode | `11.2588` | `75.7804` |
-
-### 2. Sample Bus Routes (`sampleBuses`)
-- **Trivandrum – Kochi Express** (`KL-01-AB-1234`, `KSRTC`):
-  - *Route:* Thiruvananthapuram (06:00 AM) → Kollam (07:30 AM) → Alappuzha (08:45 AM) → Kochi (10:00 AM)
-- **Kochi – Thrissur Super Fast** (`KL-07-BC-5678`, `Super Fast`):
-  - *Route:* Kochi (07:00 AM) → Thrissur (08:30 AM)
-- **Kozhikode – Thrissur Fast** (`KL-11-CD-9012`, `Fast`):
-  - *Route:* Kozhikode (09:00 AM) → Thrissur (11:30 AM)
-- **Trivandrum – Kollam Private** (`KL-01-EF-3456`, `Private`):
-  - *Route:* Thiruvananthapuram (08:00 AM) → Attingal (08:45 AM) → Kollam (09:30 AM)
-- **Kerala Coastal Ordinary** (`KL-04-GH-7890`, `Ordinary`):
-  - *Route:* Kollam (06:30 AM) → Karunagappally (07:15 AM) → Kayamkulam (08:00 AM) → Alappuzha (09:00 AM)
-
----
-
-## 🔧 Troubleshooting & Gotchas
-
-1. **CORS Blocked Errors:**
-   - Ensure the frontend URL in `backend/.env` under `FRONTEND_URL` exactly matches your browser's protocol, host, and port (e.g. `http://localhost:5173` or `http://localhost:3000` without trailing slashes).
-2. **Firebase Private Key Newline Escapes:**
-   - In `.env` or Render environment settings, ensure the private key contains literal `\n` or properly formatted multi-line RSA PEM strings: `"-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"`.
-3. **Port In Use (EADDRINUSE):**
-   - If port `5000` or `5173` is busy, configure alternative ports in `backend/.env` (`PORT=5001`) and `frontend/vite.config.ts`.
-4. **Leaflet Custom Marker Alignment:**
-   - SVG markers use `iconAnchor: [14, 36]` and `popupAnchor: [0, -36]` to pin the tip directly to the stop's geographic coordinates.
-
----
-
-## 🌐 Deployment Configuration (Render & Vercel)
-
-### 1. Backend Service on Render (`render.yaml`)
-```yaml
-services:
-  - type: web
-    name: catchmybus-backend
-    env: node
-    region: oregon
-    plan: free
-    rootDir: backend
-    buildCommand: npm install
-    startCommand: npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 5000
-      - key: FRONTEND_URL
-        value: https://catch-my-bus.vercel.app,http://localhost:5173,http://localhost:3000
-```
-
-### 2. Frontend SPA on Vercel (`frontend/vercel.json`)
-```json
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
-```
-
----
-
-## 🛡️ Security Hardening & Production Roadmap
-
-### Security Hardening
-- [ ] Implement server-side Firebase ID token verification middleware on all `/api/admin/*` and `/api/feedback` routes.
-- [ ] Enforce Firestore role-based security rules using custom user claims.
-- [ ] Add rate limiting (`express-rate-limit`) to prevent API abuse on `/api/buses/search`.
-
-### Future Roadmap
-- [ ] **Live GPS Bus Tracking:** Real-time WebSocket / MQTT integration for streaming vehicle coordinates.
-- [ ] **Push & SMS Alerts:** Commuter notifications for delay updates and departure reminders.
-- [ ] **Voice Search:** Multi-dialect Malayalam voice recognition search.
-- [ ] **Offline PWA:** Progressive Web App service worker caching for offline schedule lookups.
-- [ ] **Native Mobile Apps:** Cross-platform React Native / Expo build for Android and iOS.
 
 ---
 *Built with ❤️ for commuters across Kerala.*
