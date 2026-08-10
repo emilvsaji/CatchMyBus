@@ -113,18 +113,30 @@ router.get('/search', async (req: Request, res: Response) => {
       // If no route entries, still allow fallback on bus.from/bus.to
       const hasRoute = routeArray.length > 0;
 
+      // Match stop index using exact & word-boundary logic (avoids "pala" matching "panackapalam")
+      const matchStopIndex = (route: string[], query: string): number => {
+        if (!query) return -1;
+        const exact = route.indexOf(query);
+        if (exact !== -1) return exact;
+        const wordRegex = new RegExp(`(^|\\s)${query}(\\s|$)`, 'i');
+        const wordMatch = route.findIndex(s => wordRegex.test(s));
+        if (wordMatch !== -1) return wordMatch;
+        const reverseMatch = route.findIndex(s => s && new RegExp(`(^|\\s)${s}(\\s|$)`, 'i').test(query));
+        if (reverseMatch !== -1) return reverseMatch;
+        return -1;
+      };
+
       // Find indexes by comparing normalized stop names
       let fromIndex = -1;
       let toIndex = -1;
       if (hasRoute) {
-        // If user searched the same stop for from & to (e.g. d -> d), treat it as a single-stop query
         if (qFrom === qTo) {
-          fromIndex = normalizedRoute.findIndex((nstop) => nstop.includes(qFrom) || qFrom.includes(nstop));
+          fromIndex = matchStopIndex(normalizedRoute, qFrom);
           toIndex = fromIndex;
           console.log(`  Same-stop query detected. index=${fromIndex}`);
         } else {
-          fromIndex = normalizedRoute.findIndex((nstop) => nstop.includes(qFrom) || qFrom.includes(nstop));
-          toIndex = normalizedRoute.findIndex((nstop) => nstop.includes(qTo) || qTo.includes(nstop));
+          fromIndex = matchStopIndex(normalizedRoute, qFrom);
+          toIndex = matchStopIndex(normalizedRoute, qTo);
           console.log(`  Route search: qFrom='${qFrom}' → fromIndex=${fromIndex}, qTo='${qTo}' → toIndex=${toIndex}`);
         }
       }
@@ -169,8 +181,15 @@ router.get('/search', async (req: Request, res: Response) => {
             const departure = t.departureTime || t.time || t.arrivalTime || '';
             return { ...t, stopName, arrivalTime: arrival, departureTime: departure, _n: normalize(stopName) };
           });
-          const matchFrom = normalizedTimings.find(t => t._n.includes(qFrom) || qFrom.includes(t._n));
-          const matchTo = normalizedTimings.find(t => t._n.includes(qTo) || qTo.includes(t._n));
+          const isTimingMatch = (tNorm: string, q: string) => {
+            if (!tNorm || !q) return false;
+            if (tNorm === q) return true;
+            if (new RegExp(`(^|\\s)${q}(\\s|$)`, 'i').test(tNorm)) return true;
+            if (new RegExp(`(^|\\s)${tNorm}(\\s|$)`, 'i').test(q)) return true;
+            return false;
+          };
+          const matchFrom = normalizedTimings.find(t => isTimingMatch(t._n, qFrom));
+          const matchTo = normalizedTimings.find(t => isTimingMatch(t._n, qTo));
           if (matchFrom) fromTiming = matchFrom;
           if (matchTo) toTiming = matchTo;
           if (matchFrom && matchTo) usedProvidedTimings = true;
@@ -270,9 +289,15 @@ router.get('/search', async (req: Request, res: Response) => {
       }
       const busFromField = normalize(fallbackFrom);
       const busToField = normalize(fallbackTo);
-      console.log(`  Route match failed. Trying fallback: fallbackFrom='${fallbackFrom}' (normalized='${busFromField}') fallbackTo='${fallbackTo}' (normalized='${busToField}')`);
+      const isFieldMatch = (field: string, query: string) => {
+        if (!field || !query) return false;
+        if (field === query) return true;
+        if (new RegExp(`(^|\\s)${query}(\\s|$)`, 'i').test(field)) return true;
+        if (new RegExp(`(^|\\s)${field}(\\s|$)`, 'i').test(query)) return true;
+        return false;
+      };
       const isSameQuery = qFrom === qTo;
-      if ((isSameQuery && (busFromField.includes(qFrom) || busToField.includes(qFrom))) || (!isSameQuery && busFromField.includes(qFrom) && busToField.includes(qTo))) {
+      if ((isSameQuery && (isFieldMatch(busFromField, qFrom) || isFieldMatch(busToField, qFrom))) || (!isSameQuery && isFieldMatch(busFromField, qFrom) && isFieldMatch(busToField, qTo))) {
         console.log(`  ✅ Fallback match found!`);
         // Create fall-back timings using start/end
         const fromTiming = {

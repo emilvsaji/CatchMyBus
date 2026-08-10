@@ -69,6 +69,33 @@ const extractStopNameFromRouteItem = (item: any): string => {
   return item?.name || item?.stopName || item?.stop || '';
 };
 
+// ─── Stop name matcher (exact & word-boundary, avoids substring false positives) ───
+const normalizeStop = (s: string) =>
+  (s || '')
+    .toLowerCase()
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const isStopMatch = (stopCandidate: string, targetQuery: string): boolean => {
+  const normCandidate = normalizeStop(stopCandidate);
+  const normTarget = normalizeStop(targetQuery);
+  if (!normCandidate || !normTarget) return false;
+
+  // 1. Exact match (e.g. "pala" === "pala")
+  if (normCandidate === normTarget) return true;
+
+  // 2. Word-boundary match (e.g. "pala" matches "pala bus stand", but NOT "panackapalam")
+  const wordRegex = new RegExp(`(^|\\s)${normTarget}(\\s|$)`, 'i');
+  if (wordRegex.test(normCandidate)) return true;
+
+  // 3. Reverse word-boundary match (e.g. target "pala town" matches candidate "pala")
+  const reverseWordRegex = new RegExp(`(^|\\s)${normCandidate}(\\s|$)`, 'i');
+  if (reverseWordRegex.test(normTarget)) return true;
+
+  return false;
+};
+
 // ─── Main component ───────────────────────────────────────────────────────────
 const BusCard = ({ result }: BusCardProps) => {
   const { bus, fromTiming, toTiming, distance, estimatedTime, fare, partial } = result;
@@ -272,13 +299,26 @@ const BusCard = ({ result }: BusCardProps) => {
                   const stopName = extractStopNameFromRouteItem(stop) || 'Unknown';
                   const isFirst = idx === 0;
                   const isLast  = idx === bus.route.length - 1;
-                  const fromCmp = (fromTiming?.stopName || displayFromName).toLowerCase();
-                  const toCmp   = (toTiming?.stopName   || displayToName).toLowerCase();
-                  const isFromStop = stopName.toLowerCase().includes(fromCmp) || fromCmp.includes(stopName.toLowerCase());
-                  const isToStop   = stopName.toLowerCase().includes(toCmp)   || toCmp.includes(stopName.toLowerCase());
+                  const targetFrom = result.requestedFrom || fromTiming?.stopName || displayFromName;
+                  const targetTo   = result.requestedTo || toTiming?.stopName || displayToName;
+                  const isFromStop = isStopMatch(stopName, targetFrom);
+                  const isToStop   = isStopMatch(stopName, targetTo);
                   const isHighlighted = isFromStop || isToStop;
 
-                  const timing = bus.timings?.[idx];
+                  // Find timing by stop name match, fallback to index
+                  const getStopTiming = () => {
+                    if (Array.isArray(bus.timings) && bus.timings.length > 0) {
+                      const found = bus.timings.find((t: any) => {
+                        const tName = extractStopNameFromRouteItem(t);
+                        return isStopMatch(stopName, tName);
+                      });
+                      if (found) return found;
+                      if (bus.timings[idx]) return bus.timings[idx];
+                    }
+                    return null;
+                  };
+
+                  const timing = getStopTiming();
                   const timeStr = sanitizeTime(timing?.arrivalTime || timing?.departureTime);
 
                   return (
@@ -304,15 +344,15 @@ const BusCard = ({ result }: BusCardProps) => {
                       <div className="flex-1 min-w-0">
                         <p className={`text-sm leading-tight ${isHighlighted ? 'font-semibold text-neutral-800' : 'text-neutral-600'}`}>
                           {stopName}
-                          {isFirst && <span className="ml-1 text-2xs text-[#1B7F4C] font-normal">(start)</span>}
-                          {isLast  && <span className="ml-1 text-2xs text-[#B3261E] font-normal">(end)</span>}
-                          {isFromStop && !isFirst && <span className="ml-1 text-2xs text-neutral-400 font-normal">(your from)</span>}
-                          {isToStop   && !isLast  && <span className="ml-1 text-2xs text-neutral-400 font-normal">(your to)</span>}
+                          {isFirst && <span className="ml-1 text-2xs text-[#1B7F4C] font-normal">Start</span>}
+                          {isLast  && <span className="ml-1 text-2xs text-[#B3261E] font-normal">End</span>}
+                          {isFromStop && <span className="ml-1.5 inline-block px-1.5 py-0.5 text-2xs font-semibold bg-amber-400/20 text-amber-800 rounded border border-amber-400/40">Your From</span>}
+                          {isToStop   && <span className="ml-1.5 inline-block px-1.5 py-0.5 text-2xs font-semibold bg-amber-400/20 text-amber-800 rounded border border-amber-400/40">Your To</span>}
                         </p>
                         {timeStr !== '—' && (
                           <p className="text-xs tabular-nums text-neutral-400 mt-0.5">
-                            <span className="section-label text-neutral-300 mr-1">
-                              {isFromStop ? 'Dep' : 'Arr'}
+                            <span className="section-label text-neutral-400 mr-1">
+                              {isFromStop ? 'Dep' : isToStop ? 'Arr' : (idx === 0 ? 'Dep' : 'Arr')}
                             </span>
                             {timeStr}
                           </p>
