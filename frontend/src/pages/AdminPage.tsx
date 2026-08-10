@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Bus, Save, AlertCircle, X, Edit2, Trash2, Search, Copy } from 'lucide-react';
+import { Plus, Bus, Save, AlertCircle, X, Edit2, Trash2, Search, Copy, Inbox, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
+import { BusRequest } from '../types';
 
 interface StopTiming {
   stopName: string;
@@ -20,8 +22,19 @@ interface BusData {
   timings: Array<{ stop?: string; stopName?: string; time?: string; arrivalTime?: string; departureTime?: string }>;
 }
 
+const getBadgeClass = (type: string): string => {
+  switch (type) {
+    case 'KSRTC':      return 'badge-ksrtc';
+    case 'Private':    return 'badge-private';
+    case 'Fast':       return 'badge-fast';
+    case 'Super Fast': return 'badge-superfast';
+    default:           return 'badge-ordinary';
+  }
+};
+
 const AdminPage = () => {
-  const [activeTab, setActiveTab] = useState<'buses' | 'stops'>('buses');
+  const { currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState<'buses' | 'stops' | 'requests'>('buses');
   const [busForm, setBusForm] = useState({
     busName: '',
     busNumber: '',
@@ -40,12 +53,73 @@ const AdminPage = () => {
   const [isLoadingBuses, setIsLoadingBuses] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Fetch all buses when "Manage Bus" tab is active
+  // Bus Requests State
+  const [busRequests, setBusRequests] = useState<BusRequest[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+
+  // Fetch all buses and pending requests on mount
+  useEffect(() => {
+    fetchAllBuses();
+    fetchBusRequests();
+  }, []);
+
+  // Refresh when switching tabs
   useEffect(() => {
     if (activeTab === 'stops') {
       fetchAllBuses();
+    } else if (activeTab === 'requests') {
+      fetchBusRequests();
     }
   }, [activeTab]);
+
+  const fetchBusRequests = async () => {
+    setIsLoadingRequests(true);
+    try {
+      const response = await api.get('/api/bus-requests?status=pending');
+      setBusRequests(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching bus requests:', error);
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  };
+
+  const handleApproveRequest = async (requestId: string) => {
+    setApprovingId(requestId);
+    try {
+      await api.put(`/api/bus-requests/${requestId}/approve`, {
+        adminEmail: currentUser?.email || 'admin@catchmybus.com',
+      });
+      toast.success('Bus approved and published to live listings!');
+      setBusRequests(prev => prev.filter(r => r.id !== requestId));
+      fetchAllBuses();
+    } catch (error: any) {
+      console.error('Error approving request:', error);
+      toast.error(error.response?.data?.error || 'Failed to approve request');
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      await api.put(`/api/bus-requests/${requestId}/reject`, {
+        rejectionReason: rejectReason.trim(),
+        adminEmail: currentUser?.email || 'admin@catchmybus.com',
+      });
+      toast.success('Bus suggestion rejected');
+      setBusRequests(prev => prev.filter(r => r.id !== requestId));
+      setRejectingId(null);
+      setRejectReason('');
+    } catch (error: any) {
+      console.error('Error rejecting request:', error);
+      toast.error(error.response?.data?.error || 'Failed to reject request');
+    }
+  };
 
   const fetchAllBuses = async () => {
     setIsLoadingBuses(true);
@@ -322,31 +396,54 @@ const AdminPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center space-x-2 mb-6">
+        <div className="flex flex-wrap items-center gap-2 mb-6">
           <button
             onClick={() => {
               setEditingBus(null);
               setActiveTab('buses');
             }}
-            className={`flex items-center px-5 py-2.5 rounded-lg font-medium transition-colors text-sm min-h-0 ${
+            className={`flex items-center px-4 py-2.5 rounded-lg font-medium transition-colors text-sm min-h-0 ${
               activeTab === 'buses'
                 ? 'bg-navy-800 text-white'
                 : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'
             }`}
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-1.5" />
             Add Bus
           </button>
           <button
-            onClick={() => setActiveTab('stops')}
-            className={`flex items-center px-5 py-2.5 rounded-lg font-medium transition-colors text-sm min-h-0 ${
+            onClick={() => {
+              setEditingBus(null);
+              setActiveTab('stops');
+            }}
+            className={`flex items-center px-4 py-2.5 rounded-lg font-medium transition-colors text-sm min-h-0 ${
               activeTab === 'stops'
                 ? 'bg-navy-800 text-white'
                 : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'
             }`}
           >
-            <Bus className="h-4 w-4 mr-2" />
-            Manage Bus
+            <Bus className="h-4 w-4 mr-1.5" />
+            Manage Buses
+          </button>
+          <button
+            onClick={() => {
+              setEditingBus(null);
+              setActiveTab('requests');
+              fetchBusRequests();
+            }}
+            className={`flex items-center px-4 py-2.5 rounded-lg font-medium transition-colors text-sm min-h-0 ${
+              activeTab === 'requests'
+                ? 'bg-navy-800 text-white'
+                : 'bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100'
+            }`}
+          >
+            <Inbox className="h-4 w-4 mr-1.5" />
+            New bus requests
+            {busRequests.length > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 text-2xs font-bold rounded-full bg-amber-400 text-navy-800">
+                {busRequests.length}
+              </span>
+            )}
           </button>
         </div>
 
@@ -870,6 +967,193 @@ const AdminPage = () => {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Bus Requests Tab */}
+        {activeTab === 'requests' && (
+          <div className="space-y-6 animate-slide-up">
+            <div className="transit-card p-6">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">New Bus Requests</h2>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    Review and verify community-submitted bus schedules before publishing live
+                  </p>
+                </div>
+                <button
+                  onClick={fetchBusRequests}
+                  className="btn-ghost text-xs py-2 px-3 flex items-center gap-1.5 min-h-0"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {isLoadingRequests ? (
+                <div className="text-center py-10 text-neutral-500">
+                  <div className="inline-block w-7 h-7 border-2 border-navy-800/20 border-t-navy-800 rounded-full animate-spin mb-2" />
+                  <p className="text-xs">Loading requests…</p>
+                </div>
+              ) : busRequests.length === 0 ? (
+                <div className="text-center py-12 border border-dashed border-neutral-200 rounded-lg">
+                  <Inbox className="w-10 h-10 text-neutral-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-neutral-700">No pending bus requests</p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    All community suggestions have been reviewed. New suggestions will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {busRequests.map((req) => {
+                    const isExpanded = expandedRequestId === req.id;
+                    const isRejecting = rejectingId === req.id;
+                    const isApproving = approvingId === req.id;
+                    const formattedDate = req.createdAt?.toDate
+                      ? req.createdAt.toDate().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                      : req.createdAt
+                        ? new Date(req.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'Recent';
+
+                    return (
+                      <div
+                        key={req.id}
+                        className="border border-neutral-200 rounded-lg overflow-hidden bg-white shadow-transit hover:border-neutral-300 transition-all"
+                      >
+                        <div className="p-4 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                          {/* Left: Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                              <span className={`transit-badge ${getBadgeClass(req.type)}`}>
+                                {req.type}
+                              </span>
+                              {req.busNumber && (
+                                <span className="text-2xs text-neutral-400 tabular-nums font-mono">
+                                  {req.busNumber}
+                                </span>
+                              )}
+                              <span className="text-2xs text-neutral-400">
+                                Submitted {formattedDate}
+                              </span>
+                            </div>
+
+                            <h3 className="text-base font-bold text-neutral-800 uppercase tracking-wide leading-tight mb-1">
+                              {req.busName}
+                            </h3>
+
+                            <div className="text-xs text-neutral-600 space-y-1">
+                              <p>
+                                <span className="font-medium text-neutral-500">Route:</span>{' '}
+                                <span className="font-semibold text-neutral-800">{req.from}</span>
+                                {req.via && ` → ${req.via}`} →{' '}
+                                <span className="font-semibold text-neutral-800">{req.to}</span>
+                              </p>
+                              <p>
+                                <span className="font-medium text-neutral-500">Submitted by:</span>{' '}
+                                <span className="text-neutral-700">
+                                  {req.submittedByName ? `${req.submittedByName} (${req.submittedByEmail || 'No email'})` : (req.submittedByEmail || 'Anonymous user')}
+                                  {req.submittedByPhone && <span className="text-neutral-500 ml-1.5 font-mono">· 📞 {req.submittedByPhone}</span>}
+                                </span>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Right: Actions */}
+                          <div className="flex flex-row sm:flex-col items-end gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleApproveRequest(req.id)}
+                                disabled={isApproving}
+                                className="btn-amber text-xs px-3.5 py-1.5 min-h-0 flex items-center gap-1 shadow-sm"
+                                title="Publish this bus to live listings"
+                              >
+                                {isApproving ? (
+                                  <div className="w-3.5 h-3.5 border-2 border-navy-800 border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Check className="w-3.5 h-3.5" />
+                                )}
+                                <span>Approve</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setRejectingId(isRejecting ? null : req.id);
+                                  setRejectReason('');
+                                }}
+                                className="btn-ghost text-xs px-3 py-1.5 min-h-0 text-neutral-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200"
+                                title="Reject this suggestion"
+                              >
+                                Reject
+                              </button>
+                            </div>
+
+                            <button
+                              onClick={() => setExpandedRequestId(isExpanded ? null : req.id)}
+                              className="text-2xs text-neutral-500 hover:text-navy-800 flex items-center gap-1 mt-1 min-h-0"
+                            >
+                              <span>{req.route?.length || 0} stops & timings</span>
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Inline Reject Reason Drawer */}
+                        {isRejecting && (
+                          <div className="px-4 py-3 bg-red-50/50 border-t border-red-100 flex flex-col sm:flex-row items-center gap-2 animate-slide-down">
+                            <input
+                              type="text"
+                              placeholder="Optional rejection reason (e.g. Duplicate route or invalid timings)"
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              className="input-field text-xs flex-1 bg-white"
+                            />
+                            <div className="flex gap-2 w-full sm:w-auto">
+                              <button
+                                onClick={() => handleRejectRequest(req.id)}
+                                className="px-3 py-2 bg-red-600 text-white rounded text-xs font-semibold hover:bg-red-700 transition-colors flex-1 sm:flex-none"
+                              >
+                                Confirm Reject
+                              </button>
+                              <button
+                                onClick={() => setRejectingId(null)}
+                                className="px-3 py-2 bg-white border border-neutral-200 text-neutral-600 rounded text-xs hover:bg-neutral-50 flex-1 sm:flex-none"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Expandable Stops and Timings Breakdown */}
+                        {isExpanded && (
+                          <div className="border-t border-neutral-100 px-4 py-3 bg-neutral-50/50 text-xs">
+                            <p className="font-semibold text-neutral-700 mb-2">Configured Stops & Scheduled Times:</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                              {req.route.map((stopName, idx) => {
+                                const stopTiming = req.timings?.find((t: any) => (t.stopName || t.stop) === stopName) || req.timings?.[idx];
+                                const timeStr = stopTiming?.arrivalTime || stopTiming?.time || stopTiming?.departureTime || '—';
+                                return (
+                                  <div key={idx} className="bg-white border border-neutral-200 rounded p-2 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-1.5 min-w-0">
+                                      <span className="w-4 h-4 rounded-full bg-navy-800/10 text-navy-800 text-2xs font-bold flex items-center justify-center flex-shrink-0">
+                                        {idx + 1}
+                                      </span>
+                                      <span className="truncate font-medium text-neutral-800">{stopName}</span>
+                                    </div>
+                                    <span className="tabular-nums font-semibold text-neutral-600 flex-shrink-0 text-2xs">
+                                      {timeStr}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

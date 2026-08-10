@@ -292,6 +292,11 @@ frontend/
 
 #### `HomePage.tsx` & `SearchResults.tsx`
 - **Desktop-Only Feature Strip:** 3-card feature strip hidden on mobile (`hidden sm:block`) for mobile search focus.
+#### `UserDashboard.tsx`
+- **Commuter Profile Details:** Collects full name, phone number, district, and home town with persistent `localStorage` saving.
+- **Suggest a Bus Flow:** "Add Bus" section defaulting to **`Private`** bus type with real-time uppercase bus names, smart paste stops parser, and persistent confirmation message.
+- **Review Queue Metadata:** Automatically forwards commuter name and phone number alongside the suggested bus data for admin contact.
+
 - **Refined Bottom Spacing:** Reduced bottom padding (`pb-8`) and grid margins (`mb-6`) above the footer.
 
 ---
@@ -337,6 +342,14 @@ backend/
 | `POST` | `/api/admin/stops` | `{ name, district, location: { lat, lng } }` | Adds a new official bus stop. |
 | `GET` | `/api/admin/debug/buses` | `limit` (number, opt) | Diagnostic inspection of raw Firestore documents. |
 
+#### **Community Bus Suggestions Routes (`/api/bus-requests`)**
+| Method | Endpoint | Payload / Params | Description |
+|---|---|---|---|
+| `POST` | `/api/bus-requests` | `{ busName, busNumber, from, via, to, type, route, timings, submittedBy, submittedByEmail }` | Commuter submission of missing bus schedules (status initialized to `'pending'`). |
+| `GET` | `/api/bus-requests` | `status` (query, opt, defaults to `'pending'`) | Retrieves pending or filtered community submissions for admin review. |
+| `PUT` | `/api/bus-requests/:id/approve` | `{ adminEmail: string }` | Admin approval: copies request data into live `buses` collection and sets request status to `'approved'`. |
+| `PUT` | `/api/bus-requests/:id/reject` | `{ rejectionReason: string, adminEmail: string }` | Admin rejection: sets status to `'rejected'` without modifying the live `buses` collection. |
+
 #### **User Favorites Routes (`/api/favorites`)**
 | Method | Endpoint | Payload / Params | Description |
 |---|---|---|---|
@@ -374,6 +387,28 @@ interface Bus {
   timings: BusTiming[];       // Array of timing objects
   fare?: number;              // Pre-calculated base fare (optional)
   createdAt: Date;
+  approvedFromRequestId?: string; // Reference to community suggestion if approved
+}
+
+// 3. Community Bus Request Document (`busRequests` collection)
+interface BusRequest {
+  id: string;
+  busName: string;            // Auto-uppercased bus title
+  busNumber?: string;         // Vehicle registration
+  type: 'KSRTC' | 'Private' | 'Fast' | 'Super Fast' | 'Ordinary';
+  from?: string;
+  to?: string;
+  via?: string;
+  route: string[];
+  timings: Array<{ stopName: string; arrivalTime: string; departureTime: string }>;
+  submittedBy: string;        // Submitter Firebase UID
+  submittedByEmail?: string;  // Submitter email address
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;        // Reviewing admin email/UID
+  rejectionReason?: string;   // Optional explanation if rejected
+  approvedBusId?: string;     // Resulting bus ID in live 'buses' collection
 }
 
 interface BusTiming {

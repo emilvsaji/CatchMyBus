@@ -73,7 +73,7 @@ const Header = () => {
                       aria-hidden="true"
                     />
                     <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-neutral-200 rounded-lg shadow-transit-md z-50 animate-fade-in py-1">
-                      {isAdmin && (
+                      {isAdmin ? (
                         <Link
                           to="/admin"
                           className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 min-h-0"
@@ -81,6 +81,15 @@ const Header = () => {
                         >
                           <LayoutDashboard className="w-4 h-4 text-neutral-400" />
                           Admin panel
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/dashboard"
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 min-h-0"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-neutral-400" />
+                          My dashboard
                         </Link>
                       )}
                       <button

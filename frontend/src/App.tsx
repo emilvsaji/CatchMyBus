@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import SearchResults from './pages/SearchResults';
 import AdminPage from './pages/AdminPage';
+import UserDashboard from './pages/UserDashboard';
 import DebugPage from './pages/DebugPage';
 
 function App() {
@@ -22,6 +23,14 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchResults />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute requireAdmin={false}>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/admin"
               element={

@@ -5,6 +5,7 @@ import busRoutes from './routes/busRoutes';
 import adminRoutes from './routes/adminRoutes';
 import favoriteRoutes from './routes/favoriteRoutes';
 import feedbackRoutes from './routes/feedbackRoutes';
+import busRequestRoutes from './routes/busRequestRoutes';
 
 dotenv.config();
 
@@ -57,6 +58,7 @@ app.use('/api/buses', busRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/bus-requests', busRequestRoutes);
 
 // Health check
 app.get('/health', (req: Request, res: Response) => {

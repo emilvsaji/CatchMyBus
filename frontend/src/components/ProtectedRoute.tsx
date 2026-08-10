@@ -14,8 +14,8 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
   useEffect(() => {
     if (requireAdmin && currentUser && !isAdmin) {
       toast.error('Access denied. Admin privileges required.');
-    } else if (requireAdmin && !currentUser) {
-      toast.error('Please login to access this page');
+    } else if (!currentUser) {
+      toast.error('Please log in to access this page');
     }
   }, [currentUser, isAdmin, requireAdmin]);
 

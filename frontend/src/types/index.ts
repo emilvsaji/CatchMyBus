@@ -58,6 +58,28 @@ export interface Feedback {
   createdAt: Date;
 }
 
+export interface BusRequest {
+  id: string;
+  busName: string;
+  busNumber?: string;
+  type: 'KSRTC' | 'Private' | 'Fast' | 'Super Fast' | 'Ordinary';
+  from?: string;
+  to?: string;
+  via?: string;
+  route: string[];
+  timings: Array<{ stop?: string; stopName?: string; time?: string; arrivalTime?: string; departureTime?: string }>;
+  submittedBy: string;
+  submittedByEmail?: string;
+  submittedByName?: string;
+  submittedByPhone?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: any;
+  reviewedAt?: any;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  approvedBusId?: string;
+}
+
 // Component Types
 export interface SearchFormData {
   from: string;
