@@ -255,9 +255,9 @@ const HomePage = () => {
         )}
       </section>
 
-      {/* ── Feature strip ──────────────────────────────────────────────────────── */}
+      {/* ── Feature strip (Desktop only) ───────────────────────────────────────── */}
       <section
-        className="max-w-2xl mx-auto px-4 mt-12 mb-10"
+        className="hidden sm:block max-w-2xl mx-auto px-4 mt-12 mb-10"
         aria-label="What CatchMyBus does"
       >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
