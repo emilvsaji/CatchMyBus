@@ -165,9 +165,7 @@ npm run install:all
 ## Need Help?
 
 1. Check **README.md** for full documentation
-2. Check **QUICKSTART.md** for quick setup
-3. Check **SETUP_CHECKLIST.md** for step-by-step guide
-4. Check **PROJECT_SUMMARY.md** for overview
+2. Check **PROJECT_DETAILS.md** for comprehensive technical architecture, design tokens, color palette, and APIs
 
 ---
 
