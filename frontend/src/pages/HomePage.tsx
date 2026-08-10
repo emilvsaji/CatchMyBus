@@ -93,7 +93,7 @@ const HomePage = () => {
   };
 
   return (
-    <div>
+    <div className="pb-6 sm:pb-0">
       {/* ── Hero band ─────────────────────────────────────────────────────────── */}
       <section className="bg-navy-800 pt-10 pb-20 px-4">
         <div className="max-w-2xl mx-auto text-center">
@@ -204,7 +204,7 @@ const HomePage = () => {
       </section>
 
       {/* ── Inline results ─────────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-4 mt-6">
+      <section className="max-w-2xl mx-auto px-4 mt-6 mb-6">
         {loadingResults && (
           <div className="transit-card px-6 py-10 text-center animate-fade-in">
             <div className="inline-block w-8 h-8 border-2 border-navy-800/20 border-t-navy-800 rounded-full animate-spin mb-3" />

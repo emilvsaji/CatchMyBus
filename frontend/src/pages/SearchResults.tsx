@@ -47,7 +47,7 @@ const SearchResults = () => {
     : results.filter(r => r.bus.type === filterType);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto px-4 pt-6 pb-8">
 
       {/* ── Back + route header ──────────────────────────────────────────────── */}
       <div className="mb-4">
@@ -142,7 +142,7 @@ const SearchResults = () => {
         </div>
       ) : (
         /* Responsive grid: 1-col mobile → 2-col tablet+ */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {filteredResults.map((result, index) => (
             <BusCard key={index} result={result} />
           ))}
