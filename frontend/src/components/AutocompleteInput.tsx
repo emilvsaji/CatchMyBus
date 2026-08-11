@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useId } from 'react';
+import React, { useState, useEffect, useRef, useId, useMemo } from 'react';
 import { Search } from 'lucide-react';
+import Fuse from 'fuse.js';
 
 interface AutocompleteInputProps {
   label: string;
@@ -10,6 +11,13 @@ interface AutocompleteInputProps {
   icon?: React.ReactNode;
   id?: string;
 }
+
+const normalizeStop = (s: string) =>
+  (s || '')
+    .toLowerCase()
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   label,
@@ -28,6 +36,15 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
+  // Initialize Fuse instance for fuzzy searching
+  const fuse = useMemo(() => {
+    return new Fuse(suggestions, {
+      threshold: 0.45, // Tolerant matching for typos (e.g. eratpeta -> Erattupetta)
+      distance: 100,
+      minMatchCharLength: 2,
+    });
+  }, [suggestions]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -40,15 +57,39 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   }, []);
 
   const openSuggestions = (input: string) => {
-    if (!input.trim()) {
+    const trimmed = input.trim();
+    if (trimmed.length < 2) {
       setShowSuggestions(false);
+      setFilteredSuggestions([]);
       return;
     }
-    const filtered = suggestions.filter(s =>
-      s.toLowerCase().includes(input.toLowerCase())
-    );
-    setFilteredSuggestions(filtered);
-    setShowSuggestions(filtered.length > 0);
+
+    const normInput = normalizeStop(trimmed);
+
+    // 1. Exact prefix matches first (matching start of string or start of any word)
+    const prefixMatches = suggestions.filter(s => {
+      const normS = normalizeStop(s);
+      return normS.startsWith(normInput) || normS.split(' ').some(w => w.startsWith(normInput));
+    });
+
+    // 2. Substring matches that aren't already prefix matches
+    const substringMatches = suggestions.filter(s => {
+      const normS = normalizeStop(s);
+      return !prefixMatches.includes(s) && normS.includes(normInput);
+    });
+
+    // 3. Fuzzy matches via Fuse.js for typos/transpositions
+    const seen = new Set<string>([...prefixMatches, ...substringMatches]);
+    const fuzzyResults = fuse
+      .search(trimmed)
+      .map(r => r.item)
+      .filter(item => !seen.has(item));
+
+    // Combine: prefix -> substring -> fuzzy, capped at 6
+    const combined = [...prefixMatches, ...substringMatches, ...fuzzyResults].slice(0, 6);
+
+    setFilteredSuggestions(combined);
+    setShowSuggestions(combined.length > 0);
     setActiveIndex(-1);
   };
 
@@ -92,7 +133,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       <input
         id={inputId}
         type="text"
-        className="input-field"
+        className="input-field text-neutral-800 placeholder:text-neutral-400"
         placeholder={placeholder}
         value={value}
         onChange={handleInputChange}

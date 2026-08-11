@@ -96,7 +96,8 @@ export interface BusResult {
   estimatedTime: number;
   fare: number;
   partial?: boolean; // Flag for partial matches
-  timingSource?: 'actual' | 'estimated'; // Source of timing data
+  timingSource?: 'actual' | 'estimated' | 'provided' | 'none'; // Source of timing data
+  noTimings?: boolean; // True if bus has no timings configured
   requestedFrom?: string; // User's search origin
   requestedTo?: string; // User's search destination
   requestedTime?: string; // User's search time

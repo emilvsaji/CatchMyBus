@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, MapPin, Navigation, Clock, Map, Bookmark } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -27,6 +27,7 @@ const FEATURE_ITEMS = [
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     from:     '',
     to:       '',
@@ -53,6 +54,18 @@ const HomePage = () => {
       .catch(() => {/* silently ignore if stops endpoint not reachable */});
   }, []);
 
+  const scrollToResults = () => {
+    setTimeout(() => {
+      if (resultsRef.current) {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        resultsRef.current.scrollIntoView({
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
+  };
+
   const fetchBusResults = async (from: string, to: string, type: string) => {
     try {
       setLoadingResults(true);
@@ -61,6 +74,7 @@ const HomePage = () => {
         params: { from, to, type, time: formData.time, showAll: formData.showAll },
       });
       setResults(resp.data.data || []);
+      scrollToResults();
     } catch (err: any) {
       if (err.response) {
         toast.error(`Search failed: ${err.response.status}`);
@@ -68,6 +82,7 @@ const HomePage = () => {
         toast.error('Cannot reach backend — check your connection.');
       }
       setResults([]);
+      scrollToResults();
     } finally {
       setLoadingResults(false);
     }
@@ -117,7 +132,7 @@ const HomePage = () => {
               <AutocompleteInput
                 id="search-from"
                 label="From"
-                placeholder="e.g. Thiruvananthapuram"
+                placeholder="Enter starting stop"
                 value={formData.from}
                 onChange={val => setFormData(f => ({ ...f, from: val }))}
                 suggestions={stops}
@@ -126,7 +141,7 @@ const HomePage = () => {
               <AutocompleteInput
                 id="search-to"
                 label="To"
-                placeholder="e.g. Kochi"
+                placeholder="Enter destination stop"
                 value={formData.to}
                 onChange={val => setFormData(f => ({ ...f, to: val }))}
                 suggestions={stops}
@@ -204,7 +219,7 @@ const HomePage = () => {
       </section>
 
       {/* ── Inline results ─────────────────────────────────────────────────────── */}
-      <section className="max-w-2xl mx-auto px-4 mt-6 mb-6">
+      <section ref={resultsRef} className="max-w-2xl mx-auto px-4 mt-6 mb-6">
         {loadingResults && (
           <div className="transit-card px-6 py-10 text-center animate-fade-in">
             <div className="inline-block w-8 h-8 border-2 border-navy-800/20 border-t-navy-800 rounded-full animate-spin mb-3" />

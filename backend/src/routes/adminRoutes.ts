@@ -9,20 +9,29 @@ router.post('/buses', async (req: Request, res: Response) => {
   try {
     console.log('📝 Received bus data:', req.body);
     
-    const { busName, from, via, to, type, route, timings } = req.body;
+    const { busName, busNumber, from, via, to, type, route, timings } = req.body;
 
-    if (!busName || !from || !to || !type || !route || !timings) {
+    if (!busName || !from || !to || !type || !route) {
       console.error('❌ Missing required fields');
-      return res.status(400).json({ error: 'All required fields must be filled' });
+      return res.status(400).json({ error: 'Bus name, From, To, Type, and Route are required' });
+    }
+
+    const routeArray = Array.isArray(route)
+      ? route.map((s: any) => String(typeof s === 'object' ? s?.name || s?.stopName || '' : s).trim()).filter(Boolean)
+      : [String(route).trim()];
+
+    if (routeArray.length < 2) {
+      return res.status(400).json({ error: 'Route must contain at least 2 stops' });
     }
 
     const busData = {
-      busName,
-      from,
-      via: via || '', // via is optional
-      to,
+      busName: String(busName).toUpperCase().trim(),
+      busNumber: busNumber ? String(busNumber).trim() : '',
+      from: String(from).trim(),
+      via: via ? String(via).trim() : '', // via is optional
+      to: String(to).trim(),
       type,
-      route: Array.isArray(route) ? route : [route],
+      route: routeArray,
       timings: Array.isArray(timings) ? timings : [],
       createdAt: new Date(),
     };

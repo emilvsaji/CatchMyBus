@@ -172,7 +172,9 @@ router.get('/search', async (req: Request, res: Response) => {
         let fromTiming: any = null;
         let toTiming: any = null;
         let usedProvidedTimings = false;
-        if (Array.isArray(bus.timings)) {
+        const hasBusTimings = Array.isArray(bus.timings) && bus.timings.length > 0;
+
+        if (hasBusTimings) {
           // Normalize timings and support legacy `{ stop, time }` entries by
           // mapping `time` -> `arrivalTime`/`departureTime` when missing.
           const normalizedTimings = (bus.timings as any[]).map(t => {
@@ -205,25 +207,40 @@ router.get('/search', async (req: Request, res: Response) => {
           return `${hh}:${String(mm).padStart(2, '0')} ${ampm}`;
         };
 
-        if (!fromTiming) {
-          // If no provided timing, estimate using requested time as the from departure
-          const dep = requestedMinutes;
+        if (!hasBusTimings) {
           fromTiming = {
             stopId: `stop_${aIndex}`,
             stopName: fromStopName,
-            arrivalTime: minutesToTimeString(dep),
-            departureTime: minutesToTimeString(dep + 5),
+            arrivalTime: '',
+            departureTime: '',
           };
-        }
-        if (!toTiming) {
-          // Estimate arrival at destination as requested + estimatedTime
-          const arr = requestedMinutes + (typeof estimatedTime === 'number' ? estimatedTime : 0);
           toTiming = {
             stopId: `stop_${bIndex}`,
             stopName: toStopName,
-            arrivalTime: minutesToTimeString(arr),
-            departureTime: minutesToTimeString(arr + 5),
+            arrivalTime: '',
+            departureTime: '',
           };
+        } else {
+          if (!fromTiming) {
+            // If no provided timing, estimate using requested time as the from departure
+            const dep = requestedMinutes;
+            fromTiming = {
+              stopId: `stop_${aIndex}`,
+              stopName: fromStopName,
+              arrivalTime: minutesToTimeString(dep),
+              departureTime: minutesToTimeString(dep + 5),
+            };
+          }
+          if (!toTiming) {
+            // Estimate arrival at destination as requested + estimatedTime
+            const arr = requestedMinutes + (typeof estimatedTime === 'number' ? estimatedTime : 0);
+            toTiming = {
+              stopId: `stop_${bIndex}`,
+              stopName: toStopName,
+              arrivalTime: minutesToTimeString(arr),
+              departureTime: minutesToTimeString(arr + 5),
+            };
+          }
         }
 
         // If time filtering is requested, parse the bus departure time at the from stop
@@ -238,11 +255,11 @@ router.get('/search', async (req: Request, res: Response) => {
           return /^0{1,2}(:0{2})?(am|pm)?$/.test(norm);
         };
 
-        const departMinutes = !isPlaceholderTime(rawDepartStr)
+        const departMinutes = (hasBusTimings && !isPlaceholderTime(rawDepartStr))
           ? (parseTimeField(fromTiming.departureTime) ?? parseTimeField(fromTiming.arrivalTime) ?? parseTimeField(fromTiming.time) ?? null)
           : null;
 
-        const timingSource = usedProvidedTimings ? 'provided' : 'estimated';
+        const timingSource = !hasBusTimings ? 'none' : usedProvidedTimings ? 'provided' : 'estimated';
         const resultObj = {
           bus,
           fromTiming,
@@ -251,6 +268,7 @@ router.get('/search', async (req: Request, res: Response) => {
           estimatedTime,
           fare,
           timingSource,
+          noTimings: !hasBusTimings,
           // Echo the user's query so frontend can display what was searched
           requestedFrom: (from as string) || '',
           requestedTo: (to as string) || '',
@@ -258,10 +276,10 @@ router.get('/search', async (req: Request, res: Response) => {
         };
 
         // Ensure we always have a textual departure/arrival time on the result (avoid TBD in UI)
-        if (!fromTiming.departureTime && fromTiming.arrivalTime) {
+        if (fromTiming.arrivalTime && !fromTiming.departureTime) {
           fromTiming.departureTime = fromTiming.arrivalTime;
         }
-        if (!toTiming.arrivalTime && toTiming.departureTime) {
+        if (toTiming.departureTime && !toTiming.arrivalTime) {
           toTiming.arrivalTime = toTiming.departureTime;
         }
 

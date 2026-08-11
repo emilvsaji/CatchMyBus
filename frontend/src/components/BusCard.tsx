@@ -143,6 +143,10 @@ const BusCard = ({ result }: BusCardProps) => {
   };
 
   const hasRoute = Array.isArray(bus.route) && bus.route.length > 0;
+  const noTimingsAvailable =
+    result.timingSource === 'none' ||
+    (result as any).noTimings ||
+    ((!Array.isArray(bus.timings) || bus.timings.length === 0) && (departureTime === '—' && arrivalTime === '—'));
 
   return (
     <article className="transit-row rounded-lg overflow-hidden animate-fade-in">
@@ -156,7 +160,7 @@ const BusCard = ({ result }: BusCardProps) => {
       )}
 
       {/* ── Estimated timing notice ─── */}
-      {result.timingSource === 'estimated' && !partial && (
+      {result.timingSource === 'estimated' && !partial && !noTimingsAvailable && (
         <div className="flex items-center gap-1.5 px-4 py-1.5 bg-neutral-50 border-b border-neutral-200 text-xs text-neutral-400">
           <Clock className="w-3 h-3" aria-hidden="true" />
           Estimated times
@@ -201,43 +205,49 @@ const BusCard = ({ result }: BusCardProps) => {
             </span>
           </div>
 
-          {/* Stacked DEPARTS / duration / ARRIVES block */}
-          <div className="mt-3 flex items-stretch gap-0">
-
-            {/* DEPARTS */}
-            <div className="flex-1 min-w-0">
-              <p className="section-label text-neutral-400 mb-0.5">Departs</p>
-              <p className="text-base font-bold tabular-nums text-neutral-800 leading-none">
-                {departureTime}
-              </p>
-              <p className="text-xs text-neutral-500 mt-0.5 truncate">{displayFromName}</p>
+          {/* Stacked DEPARTS / duration / ARRIVES block or Timings not yet available */}
+          {noTimingsAvailable ? (
+            <div className="mt-3 py-2 px-3 bg-neutral-50 border border-neutral-200 rounded-md text-center">
+              <p className="text-xs font-semibold text-neutral-700">Timings not yet available</p>
+              <p className="text-2xs text-neutral-400 mt-0.5">Route registered • Exact schedule to be announced</p>
             </div>
+          ) : (
+            <div className="mt-3 flex items-stretch gap-0">
+              {/* DEPARTS */}
+              <div className="flex-1 min-w-0">
+                <p className="section-label text-neutral-400 mb-0.5">Departs</p>
+                <p className="text-base font-bold tabular-nums text-neutral-800 leading-none">
+                  {departureTime}
+                </p>
+                <p className="text-xs text-neutral-500 mt-0.5 truncate">{displayFromName}</p>
+              </div>
 
-            {/* Duration connector */}
-            <div className="flex flex-col items-center justify-center px-2 flex-shrink-0">
-              <div className="w-px flex-1 bg-neutral-200" aria-hidden="true" />
-              {estimatedTime != null ? (
-                <span className="my-1 text-2xs tabular-nums text-neutral-400 whitespace-nowrap">
-                  {estimatedTime >= 60
-                    ? `${Math.floor(estimatedTime / 60)}h ${estimatedTime % 60}m`
-                    : `${estimatedTime}m`
-                  }
-                </span>
-              ) : (
-                <span className="my-1 text-neutral-300 text-xs" aria-hidden="true">↓</span>
-              )}
-              <div className="w-px flex-1 bg-neutral-200" aria-hidden="true" />
-            </div>
+              {/* Duration connector */}
+              <div className="flex flex-col items-center justify-center px-2 flex-shrink-0">
+                <div className="w-px flex-1 bg-neutral-200" aria-hidden="true" />
+                {estimatedTime != null ? (
+                  <span className="my-1 text-2xs tabular-nums text-neutral-400 whitespace-nowrap">
+                    {estimatedTime >= 60
+                      ? `${Math.floor(estimatedTime / 60)}h ${estimatedTime % 60}m`
+                      : `${estimatedTime}m`
+                    }
+                  </span>
+                ) : (
+                  <span className="my-1 text-neutral-300 text-xs" aria-hidden="true">↓</span>
+                )}
+                <div className="w-px flex-1 bg-neutral-200" aria-hidden="true" />
+              </div>
 
-            {/* ARRIVES */}
-            <div className="flex-1 min-w-0 text-right">
-              <p className="section-label text-neutral-400 mb-0.5">Arrives</p>
-              <p className="text-base font-bold tabular-nums text-neutral-800 leading-none">
-                {arrivalTime}
-              </p>
-              <p className="text-xs text-neutral-500 mt-0.5 truncate">{displayToName}</p>
+              {/* ARRIVES */}
+              <div className="flex-1 min-w-0 text-right">
+                <p className="section-label text-neutral-400 mb-0.5">Arrives</p>
+                <p className="text-base font-bold tabular-nums text-neutral-800 leading-none">
+                  {arrivalTime}
+                </p>
+                <p className="text-xs text-neutral-500 mt-0.5 truncate">{displayToName}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right: fare + distance + bookmark */}
@@ -350,11 +360,16 @@ const BusCard = ({ result }: BusCardProps) => {
                           {isToStop   && <span className="ml-1.5 inline-block px-1.5 py-0.5 text-2xs font-semibold bg-amber-400/20 text-amber-800 rounded border border-amber-400/40">Your To</span>}
                         </p>
                         {timeStr !== '—' && (
-                          <p className="text-xs tabular-nums text-neutral-400 mt-0.5">
-                            <span className="section-label text-neutral-400 mr-1">
-                              {isFromStop ? 'Dep' : isToStop ? 'Arr' : (idx === 0 ? 'Dep' : 'Arr')}
+                          <p className="text-xs tabular-nums mt-0.5">
+                            {isFromStop && (
+                              <span className="section-label text-neutral-400 mr-1">Dep</span>
+                            )}
+                            {isToStop && (
+                              <span className="section-label text-neutral-400 mr-1">Arr</span>
+                            )}
+                            <span className={isHighlighted ? 'text-neutral-700 font-medium' : 'text-neutral-500'}>
+                              {timeStr}
                             </span>
-                            {timeStr}
                           </p>
                         )}
                       </div>

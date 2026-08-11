@@ -32,6 +32,25 @@ const getBadgeClass = (type: string): string => {
   }
 };
 
+const normalizeStop = (s: string) =>
+  (s || '')
+    .toLowerCase()
+    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const isStopMatch = (stopCandidate: string, targetQuery: string): boolean => {
+  const normCandidate = normalizeStop(stopCandidate);
+  const normTarget = normalizeStop(targetQuery);
+  if (!normCandidate || !normTarget) return false;
+  if (normCandidate === normTarget) return true;
+  const wordRegex = new RegExp(`(^|\\s)${normTarget}(\\s|$)`, 'i');
+  if (wordRegex.test(normCandidate)) return true;
+  const reverseWordRegex = new RegExp(`(^|\\s)${normCandidate}(\\s|$)`, 'i');
+  if (reverseWordRegex.test(normTarget)) return true;
+  return false;
+};
+
 const AdminPage = () => {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'buses' | 'stops' | 'requests'>('buses');
@@ -52,6 +71,10 @@ const AdminPage = () => {
   const [editingBus, setEditingBus] = useState<BusData | null>(null);
   const [isLoadingBuses, setIsLoadingBuses] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Route Import Picker State
+  const [showRoutePicker, setShowRoutePicker] = useState(false);
+  const [routePickerMatches, setRoutePickerMatches] = useState<BusData[]>([]);
 
   // Bus Requests State
   const [busRequests, setBusRequests] = useState<BusRequest[]>([]);
@@ -138,10 +161,8 @@ const AdminPage = () => {
     setEditingBus(bus);
     
     // Parse timings back into form format
-    // Group timings by stop (a bus may have multiple times per stop)
     const grouped: Record<string, { arrivalTime: string; period: 'AM' | 'PM' }[]> = {};
-    for (const timing of bus.timings) {
-      // Support legacy {stop, time} and newer {stopName, arrivalTime, departureTime}
+    for (const timing of bus.timings || []) {
       const stopKey = (timing.stop || timing.stopName || '').trim();
       const timeRaw = timing.time || timing.arrivalTime || timing.departureTime || '';
       const parts = (timeRaw || '').trim().split(/\s+/);
@@ -150,7 +171,15 @@ const AdminPage = () => {
       if (!grouped[stopKey]) grouped[stopKey] = [];
       grouped[stopKey].push({ arrivalTime: time, period });
     }
-    const parsedTimings: StopTiming[] = Object.keys(grouped).map(stop => ({ stopName: stop, times: grouped[stop] }));
+    const parsedTimings: StopTiming[] = (bus.route || []).map(stop => {
+      const stopStr = typeof stop === 'string' ? stop : (stop as any)?.name || (stop as any)?.stopName || '';
+      return {
+        stopName: stopStr,
+        times: grouped[stopStr] && grouped[stopStr].length > 0
+          ? grouped[stopStr]
+          : [{ arrivalTime: '', period: 'AM' as 'AM' | 'PM' }]
+      };
+    });
     
     setBusForm({
       busName: (bus.busName || '').toUpperCase(),
@@ -160,7 +189,7 @@ const AdminPage = () => {
       to: bus.to,
       type: bus.type,
     });
-    setStopTimings(parsedTimings);
+    setStopTimings(parsedTimings.length > 0 ? parsedTimings : [{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
     setPasteStopsText('');
   };
 
@@ -169,11 +198,33 @@ const AdminPage = () => {
     
     if (!editingBus) return;
     
-    const hasEmptyFields = stopTimings.some(st => !st.stopName.trim() || st.times.some(t => !t.arrivalTime.trim()));
-    if (hasEmptyFields) {
-      toast.error('Please fill all stop names and times');
+    if (!busForm.busName.trim()) {
+      toast.error('Please enter a bus name');
       return;
     }
+    if (!busForm.from.trim() || !busForm.to.trim()) {
+      toast.error('Please enter From and To stops');
+      return;
+    }
+
+    const validStops = stopTimings.map(st => st.stopName.trim()).filter(Boolean);
+    if (validStops.length < 2) {
+      toast.error('Please provide at least 2 stops for the route');
+      return;
+    }
+
+    // Optional timings: only include non-empty times
+    const formattedTimings = stopTimings.flatMap(st => {
+      const sName = st.stopName.trim();
+      if (!sName) return [];
+      return st.times
+        .filter(t => t.arrivalTime && t.arrivalTime.trim())
+        .map(t => ({
+          stopName: sName,
+          arrivalTime: `${t.arrivalTime.trim()} ${t.period}`,
+          departureTime: `${t.arrivalTime.trim()} ${t.period}`,
+        }));
+    });
 
     const busData = {
       busName: busForm.busName.toUpperCase().trim(),
@@ -182,8 +233,8 @@ const AdminPage = () => {
       via: busForm.via.trim(),
       to: busForm.to.trim(),
       type: busForm.type,
-      route: stopTimings.map(st => st.stopName.trim()),
-      timings: stopTimings.flatMap(st => st.times.map(t => ({ stopName: st.stopName.trim(), arrivalTime: `${t.arrivalTime} ${t.period}`, departureTime: `${t.arrivalTime} ${t.period}` })))
+      route: validStops,
+      timings: formattedTimings,
     };
     
     try {
@@ -217,9 +268,8 @@ const AdminPage = () => {
 
   const handleDuplicateBus = (bus: BusData) => {
     // Prefill the Add Bus form with a copy of the selected bus (do not set editingBus)
-    // Group timings by stop
     const grouped: Record<string, { arrivalTime: string; period: 'AM' | 'PM' }[]> = {};
-    for (const timing of bus.timings) {
+    for (const timing of bus.timings || []) {
       const stopKey = (timing.stop || timing.stopName || '').trim();
       const timeRaw = timing.time || timing.arrivalTime || timing.departureTime || '';
       const parts = (timeRaw || '').trim().split(/\s+/);
@@ -228,7 +278,15 @@ const AdminPage = () => {
       if (!grouped[stopKey]) grouped[stopKey] = [];
       grouped[stopKey].push({ arrivalTime: time, period });
     }
-    const parsedTimings: StopTiming[] = Object.keys(grouped).map(stop => ({ stopName: stop, times: grouped[stop] }));
+    const parsedTimings: StopTiming[] = (bus.route || []).map(stop => {
+      const stopStr = typeof stop === 'string' ? stop : (stop as any)?.name || (stop as any)?.stopName || '';
+      return {
+        stopName: stopStr,
+        times: grouped[stopStr] && grouped[stopStr].length > 0
+          ? grouped[stopStr]
+          : [{ arrivalTime: '', period: 'AM' as 'AM' | 'PM' }]
+      };
+    });
 
     setEditingBus(null);
     setActiveTab('buses');
@@ -242,7 +300,6 @@ const AdminPage = () => {
     });
     setStopTimings(parsedTimings.length > 0 ? parsedTimings : [{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
     setPasteStopsText('');
-    // Scroll to top so admin can see the Add Bus form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -251,6 +308,70 @@ const AdminPage = () => {
     setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'Private' });
     setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
     setPasteStopsText('');
+  };
+
+  // Import stops from an existing route based on From / Via / To
+  const handleImportRouteStops = () => {
+    const fromQuery = busForm.from.trim();
+    const toQuery = busForm.to.trim();
+    const viaQuery = busForm.via.trim();
+
+    if (!fromQuery || !toQuery) {
+      toast.error('Please enter From and To stops to search for existing routes');
+      return;
+    }
+
+    const matches = allBuses.filter(bus => {
+      const route = Array.isArray(bus.route) ? bus.route : [];
+      const busFrom = bus.from || (route.length > 0 ? route[0] : '');
+      const busTo = bus.to || (route.length > 0 ? route[route.length - 1] : '');
+
+      const matchFrom = isStopMatch(busFrom, fromQuery) || route.some(s => isStopMatch(s, fromQuery));
+      const matchTo = isStopMatch(busTo, toQuery) || route.some(s => isStopMatch(s, toQuery));
+      if (!matchFrom || !matchTo) return false;
+
+      if (viaQuery) {
+        const matchVia = (bus.via && isStopMatch(bus.via, viaQuery)) || route.some(s => isStopMatch(s, viaQuery));
+        if (!matchVia) return false;
+      }
+
+      return route.length >= 2;
+    });
+
+    if (matches.length === 0) {
+      toast.error('No existing route found for these stops');
+      return;
+    }
+
+    if (matches.length === 1) {
+      selectImportedRoute(matches[0]);
+      return;
+    }
+
+    // Multiple matches: show picker modal
+    setRoutePickerMatches(matches);
+    setShowRoutePicker(true);
+  };
+
+  const selectImportedRoute = (bus: BusData) => {
+    const route = Array.isArray(bus.route) ? bus.route : [];
+    if (route.length === 0) {
+      toast.error('Selected bus has no stops defined');
+      setShowRoutePicker(false);
+      return;
+    }
+
+    const newStopTimings: StopTiming[] = route.map(s => {
+      const stopName = typeof s === 'string' ? s : (s as any)?.name || (s as any)?.stopName || String(s);
+      return {
+        stopName,
+        times: [{ arrivalTime: '', period: 'AM' }]
+      };
+    });
+
+    setStopTimings(newStopTimings);
+    setShowRoutePicker(false);
+    toast.success(`Imported ${newStopTimings.length} stops from "${bus.busName}"`);
   };
 
   // Filter buses based on search query
@@ -272,7 +393,6 @@ const AdminPage = () => {
 
   const importPastedStops = () => {
     if (!pasteStopsText || !pasteStopsText.trim()) return;
-    // Split on commas, newlines, semicolons
     const parts = pasteStopsText.split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
     if (parts.length === 0) return;
 
@@ -323,12 +443,33 @@ const AdminPage = () => {
   const handleAddBus = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate that all stops have names and times
-    const hasEmptyFields = stopTimings.some(st => !st.stopName.trim() || st.times.some(t => !t.arrivalTime.trim()));
-    if (hasEmptyFields) {
-      toast.error('Please fill all stop names and times');
+    if (!busForm.busName.trim()) {
+      toast.error('Please enter a bus name');
       return;
     }
+    if (!busForm.from.trim() || !busForm.to.trim()) {
+      toast.error('Please enter From and To stops');
+      return;
+    }
+
+    const validStops = stopTimings.map(st => st.stopName.trim()).filter(Boolean);
+    if (validStops.length < 2) {
+      toast.error('Please provide at least 2 stops for the route');
+      return;
+    }
+
+    // Optional timings: only include non-empty times
+    const formattedTimings = stopTimings.flatMap(st => {
+      const sName = st.stopName.trim();
+      if (!sName) return [];
+      return st.times
+        .filter(t => t.arrivalTime && t.arrivalTime.trim())
+        .map(t => ({
+          stopName: sName,
+          arrivalTime: `${t.arrivalTime.trim()} ${t.period}`,
+          departureTime: `${t.arrivalTime.trim()} ${t.period}`,
+        }));
+    });
 
     const busData = {
       busName: busForm.busName.toUpperCase().trim(),
@@ -337,34 +478,23 @@ const AdminPage = () => {
       via: busForm.via.trim(),
       to: busForm.to.trim(),
       type: busForm.type,
-      route: stopTimings.map(st => st.stopName.trim()),
-      timings: stopTimings.flatMap(st => st.times.map(t => ({ stopName: st.stopName.trim(), arrivalTime: `${t.arrivalTime} ${t.period}`, departureTime: `${t.arrivalTime} ${t.period}` })))
+      route: validStops,
+      timings: formattedTimings,
     };
     
-    console.log('Attempting to add bus with data:', busData);
-    console.log('API base URL:', api.defaults.baseURL);
-    
     try {
-      const response = await api.post('/api/admin/buses', busData);
-      console.log('✅ Bus added successfully:', response.data);
+      await api.post('/api/admin/buses', busData);
       toast.success('Bus added successfully!');
       setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'Private' });
       setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
       setPasteStopsText('');
+      fetchAllBuses();
     } catch (error: any) {
       console.error('❌ Error adding bus:', error);
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response,
-        request: error.request,
-        config: error.config
-      });
-      
       if (error.code === 'ERR_NETWORK') {
         toast.error('Network Error: Cannot connect to backend server');
       } else if (error.response) {
-        const errorMessage = error.response?.data?.error || `Server error: ${error.response.status}`;
-        toast.error(errorMessage);
+        toast.error(error.response?.data?.error || `Server error: ${error.response.status}`);
       } else {
         toast.error(error.message || 'Failed to add bus');
       }
@@ -478,15 +608,26 @@ const AdminPage = () => {
 
               {/* From → Via → To */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Route Details *
-                </label>
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Route Details *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleImportRouteStops}
+                    className="btn-ghost text-xs py-1 px-2.5 min-h-0 flex items-center gap-1.5 text-neutral-600 hover:text-navy-800 border-neutral-200"
+                    title="Import stops from an existing route matching these corridor endpoints"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Import stops from existing route
+                  </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <input
                       type="text"
                       className="input-field"
-                      placeholder="From (e.g., Trivandrum)"
+                      placeholder="Enter starting stop"
                       value={busForm.from}
                       onChange={(e) => setBusForm({ ...busForm, from: e.target.value })}
                       required
@@ -496,7 +637,7 @@ const AdminPage = () => {
                     <input
                       type="text"
                       className="input-field"
-                      placeholder="Via (e.g., Kollam)"
+                      placeholder="Enter via stop (optional)"
                       value={busForm.via}
                       onChange={(e) => setBusForm({ ...busForm, via: e.target.value })}
                     />
@@ -505,7 +646,7 @@ const AdminPage = () => {
                     <input
                       type="text"
                       className="input-field"
-                      placeholder="To (e.g., Kochi)"
+                      placeholder="Enter destination stop"
                       value={busForm.to}
                       onChange={(e) => setBusForm({ ...busForm, to: e.target.value })}
                       required
@@ -516,8 +657,6 @@ const AdminPage = () => {
                   From → Via → To (Via is optional)
                 </p>
               </div>
-
-              {/* Vehicle Number in Edit/Add */}
 
               {/* Bus Type */}
               <div>
@@ -541,7 +680,7 @@ const AdminPage = () => {
               {/* Stop Name and Time Section */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Stops and Timings *
+                  Stops and Timings <span className="text-xs font-normal text-neutral-400">(timings optional)</span>
                 </label>
                 
                 <div className="mb-3">
@@ -564,7 +703,7 @@ const AdminPage = () => {
                         <input
                           type="text"
                           className="input-field"
-                          placeholder="e.g., Thiruvananthapuram Central"
+                          placeholder="Enter stop name"
                           value={stopTiming.stopName}
                           onChange={(e) => updateStopName(index, e.target.value)}
                           required
@@ -586,13 +725,11 @@ const AdminPage = () => {
                                   updateStopTime(index, ti, 'arrivalTime', value);
                                 }}
                                 maxLength={5}
-                                required
                               />
                               <select
                                 className="input-field w-24"
                                 value={t.period}
                                 onChange={(e) => updateStopTime(index, ti, 'period', e.target.value)}
-                                required
                               >
                                 <option value="AM">AM</option>
                                 <option value="PM">PM</option>
@@ -697,7 +834,7 @@ const AdminPage = () => {
                         <input
                           type="text"
                           className="input-field"
-                          placeholder="From (e.g., Trivandrum)"
+                          placeholder="Enter starting stop"
                           value={busForm.from}
                           onChange={(e) => setBusForm({ ...busForm, from: e.target.value })}
                           required
@@ -707,7 +844,7 @@ const AdminPage = () => {
                         <input
                           type="text"
                           className="input-field"
-                          placeholder="Via (e.g., Kollam)"
+                          placeholder="Enter via stop (optional)"
                           value={busForm.via}
                           onChange={(e) => setBusForm({ ...busForm, via: e.target.value })}
                         />
@@ -716,7 +853,7 @@ const AdminPage = () => {
                         <input
                           type="text"
                           className="input-field"
-                          placeholder="To (e.g., Kochi)"
+                          placeholder="Enter destination stop"
                           value={busForm.to}
                           onChange={(e) => setBusForm({ ...busForm, to: e.target.value })}
                           required
@@ -747,7 +884,7 @@ const AdminPage = () => {
                   {/* Stop Name and Time Section */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      Stops and Timings *
+                      Stops and Timings <span className="text-xs font-normal text-neutral-400">(timings optional)</span>
                     </label>
                     
                     <div className="mb-3">
@@ -770,7 +907,7 @@ const AdminPage = () => {
                             <input
                               type="text"
                               className="input-field"
-                              placeholder="e.g., Thiruvananthapuram Central"
+                              placeholder="Enter stop name"
                               value={stopTiming.stopName}
                               onChange={(e) => updateStopName(index, e.target.value)}
                               required
@@ -792,13 +929,11 @@ const AdminPage = () => {
                                       updateStopTime(index, ti, 'arrivalTime', value);
                                     }}
                                     maxLength={5}
-                                    required
                                   />
                                   <select
                                     className="input-field w-24"
                                     value={t.period}
                                     onChange={(e) => updateStopTime(index, ti, 'period', e.target.value)}
-                                    required
                                   >
                                     <option value="AM">AM</option>
                                     <option value="PM">PM</option>
@@ -1150,6 +1285,65 @@ const AdminPage = () => {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Route Picker Modal (when multiple existing routes match) */}
+        {showRoutePicker && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-xl shadow-transit-md border border-neutral-200 max-w-lg w-full p-6 animate-slide-up">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-base font-bold text-neutral-800">Select Route to Import</h3>
+                  <p className="text-xs text-neutral-500">Multiple existing buses match this corridor. Choose which stops list to copy.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowRoutePicker(false)}
+                  className="p-1 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors min-h-0"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {routePickerMatches.map(bus => (
+                  <button
+                    key={bus.id}
+                    type="button"
+                    onClick={() => selectImportedRoute(bus)}
+                    className="w-full text-left p-3 rounded-lg border border-neutral-200 hover:border-navy-800 hover:bg-neutral-50 transition-colors flex items-center justify-between gap-3 min-h-0"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-sm text-neutral-800 truncate uppercase">
+                          {bus.busName}
+                        </span>
+                        <span className={`transit-badge ${getBadgeClass(bus.type)}`}>
+                          {bus.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-500 truncate">
+                        {Array.isArray(bus.route) ? bus.route.join(' → ') : `${bus.from} → ${bus.to}`}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-navy-800 flex-shrink-0 bg-neutral-100 px-2 py-1 rounded">
+                      {Array.isArray(bus.route) ? bus.route.length : 0} stops
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowRoutePicker(false)}
+                  className="btn-ghost text-xs py-2 px-4"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}

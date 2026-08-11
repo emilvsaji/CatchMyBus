@@ -514,7 +514,7 @@ const UserDashboard = () => {
                       <input
                         type="text"
                         className="input-field"
-                        placeholder="From (e.g., Pala)"
+                        placeholder="Enter starting stop"
                         value={busForm.from}
                         onChange={(e) => setBusForm({ ...busForm, from: e.target.value })}
                         required
@@ -524,7 +524,7 @@ const UserDashboard = () => {
                       <input
                         type="text"
                         className="input-field"
-                        placeholder="Via (e.g., Panackapalam)"
+                        placeholder="Enter via stop (optional)"
                         value={busForm.via}
                         onChange={(e) => setBusForm({ ...busForm, via: e.target.value })}
                       />
@@ -533,7 +533,7 @@ const UserDashboard = () => {
                       <input
                         type="text"
                         className="input-field"
-                        placeholder="To (e.g., Pravithanam)"
+                        placeholder="Enter destination stop"
                         value={busForm.to}
                         onChange={(e) => setBusForm({ ...busForm, to: e.target.value })}
                         required
@@ -604,7 +604,7 @@ const UserDashboard = () => {
                             <input
                               type="text"
                               className="input-field text-sm"
-                              placeholder="Stop name (e.g., Pala Bus Stand)"
+                              placeholder="Enter stop name"
                               value={stopTiming.stopName}
                               onChange={(e) => updateStopName(index, e.target.value)}
                               required

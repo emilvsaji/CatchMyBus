@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Map, AlertCircle, Filter, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,6 +12,7 @@ const BUS_TYPES = ['all', 'KSRTC', 'Private', 'Fast', 'Super Fast', 'Ordinary'] 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const resultsRef = useRef<HTMLDivElement>(null);
   const [loading,      setLoading]      = useState(true);
   const [results,      setResults]      = useState<BusResult[]>([]);
   const [showMap,      setShowMap]      = useState(false);
@@ -20,6 +21,18 @@ const SearchResults = () => {
   const from = searchParams.get('from') || '';
   const to   = searchParams.get('to')   || '';
   const type = searchParams.get('type') || 'all';
+
+  const scrollToResults = () => {
+    setTimeout(() => {
+      if (resultsRef.current) {
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        resultsRef.current.scrollIntoView({
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+          block: 'start',
+        });
+      }
+    }, 100);
+  };
 
   useEffect(() => {
     fetchBusResults();
@@ -34,9 +47,11 @@ const SearchResults = () => {
         params: { from, to, type },
       });
       setResults(response.data.data || []);
+      scrollToResults();
     } catch (error) {
       console.error('Error fetching bus results:', error);
       toast.error('Failed to fetch bus information');
+      scrollToResults();
     } finally {
       setLoading(false);
     }
@@ -47,7 +62,7 @@ const SearchResults = () => {
     : results.filter(r => r.bus.type === filterType);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 pt-6 pb-8">
+    <div ref={resultsRef} className="max-w-4xl mx-auto px-4 pt-6 pb-8">
 
       {/* ── Back + route header ──────────────────────────────────────────────── */}
       <div className="mb-4">
