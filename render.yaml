@@ -13,7 +13,7 @@ services:
       - key: PORT
         value: 5000
       - key: FRONTEND_URL
-        value: https://catch-my-bus.vercel.app,http://localhost:5173,http://localhost:3000
+        value: https://catchmybus.vercel.app,https://catch-my-bus.vercel.app,http://localhost:5173,http://localhost:3000
       # Add your Firebase credentials as environment variables in Render dashboard:
       # FIREBASE_PROJECT_ID
       # FIREBASE_PRIVATE_KEY

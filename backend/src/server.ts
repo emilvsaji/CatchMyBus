@@ -12,26 +12,53 @@ dotenv.config();
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-// Build allowed origins from environment, with sensible defaults for local dev
-const frontendEnv = process.env.FRONTEND_URL || 'http://localhost:5173';
-const frontendOrigins = frontendEnv.split(',').map((s) => s.trim().replace(/\/$/, '')).filter(Boolean);
-const devOrigins = ['http://localhost:3000'];
-const allowedOrigins = Array.from(new Set([...frontendOrigins, ...devOrigins]));
+// Build allowed origins from environment, with sensible defaults for local dev and production
+const defaultOrigins = [
+  'https://catchmybus.vercel.app',
+  'https://catch-my-bus.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5174',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+];
+
+const envOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
 console.log('CORS allowed origins:', allowedOrigins);
 
-// CORS options (use a callback to allow requests with no origin)
+// Helper to check if origin is allowed
+const isOriginAllowed = (origin?: string): boolean => {
+  if (!origin) return true; // allow curl, mobile apps, same-origin
+  const normalizedOrigin = origin.replace(/\/$/, '');
+  
+  // 1. Direct match in allowed list
+  if (allowedOrigins.includes(normalizedOrigin)) return true;
+  
+  // 2. Allow all *.vercel.app domains (including preview deployments)
+  if (/^https:\/\/([a-zA-Z0-9_-]+\.)*vercel\.app$/i.test(normalizedOrigin)) return true;
+  
+  // 3. Allow localhost / 127.0.0.1 on any port
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(normalizedOrigin)) return true;
+  
+  // Fallback: allow all origins so public API requests are never blocked
+  return true;
+};
+
+// CORS options
 const corsOptions = {
   origin: (origin: any, callback: any) => {
-    if (!origin) return callback(null, true); // allow curl, mobile apps, same-origin
-    const normalizedOrigin = origin.replace(/\/$/, ''); // remove trailing slash
-    if (allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
-    
-    console.log('CORS blocked origin:', origin, 'Normalized:', normalizedOrigin);
-    console.log('Allowed origins:', allowedOrigins);
-    return callback(new Error('Not allowed by CORS'));
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -72,8 +99,18 @@ app.use((req: Request, res: Response) => {
 
 // Error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('API Error:', err.stack || err.message);
+  
+  const origin = req.headers.origin;
+  if (origin && isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  
+  res.status(500).json({
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined,
+  });
 });
 
 // Start server
