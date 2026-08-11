@@ -38,20 +38,32 @@ const HomePage = () => {
   const [loadingResults, setLoadingResults] = useState(false);
   const [results,        setResults]        = useState<BusResult[]>([]);
   const [stops,          setStops]          = useState<string[]>([]);
+  const [loadingStops,   setLoadingStops]   = useState(true);
   const [hasSearched,    setHasSearched]    = useState(false);
 
   // Fetch stops for autocomplete
   useEffect(() => {
+    setLoadingStops(true);
     api.get('/api/buses/stops')
       .then(res => {
-        if (res.data.success) {
+        if (res.data.success && Array.isArray(res.data.data)) {
           const names: string[] = Array.from(
-            new Set(res.data.data.map((s: any) => s.name as string))
+            new Set(
+              res.data.data
+                .map((s: any) => (typeof s === 'string' ? s : s.name || s.stopName || s.stop || ''))
+                .map((s: string) => s.trim())
+                .filter(Boolean)
+            )
           );
           setStops(names);
         }
       })
-      .catch(() => {/* silently ignore if stops endpoint not reachable */});
+      .catch((err) => {
+        console.warn('Could not fetch stops for autocomplete:', err);
+      })
+      .finally(() => {
+        setLoadingStops(false);
+      });
   }, []);
 
   const scrollToResults = () => {
@@ -136,6 +148,7 @@ const HomePage = () => {
                 value={formData.from}
                 onChange={val => setFormData(f => ({ ...f, from: val }))}
                 suggestions={stops}
+                isLoading={loadingStops}
                 icon={<MapPin className="w-3.5 h-3.5" />}
               />
               <AutocompleteInput
@@ -145,6 +158,7 @@ const HomePage = () => {
                 value={formData.to}
                 onChange={val => setFormData(f => ({ ...f, to: val }))}
                 suggestions={stops}
+                isLoading={loadingStops}
                 icon={<Navigation className="w-3.5 h-3.5" />}
               />
             </div>

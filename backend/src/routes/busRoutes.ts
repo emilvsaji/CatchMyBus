@@ -462,18 +462,70 @@ router.get('/search', async (req: Request, res: Response) => {
   }
 });
 
-// Get all bus stops
+// Get all bus stops (aggregated from 'stops' collection + all routes in 'buses' collection)
 router.get('/stops', async (req: Request, res: Response) => {
   try {
-    const stopsSnapshot = await db.collection('stops').get();
-    const stops = stopsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const stopsMap = new Map<string, any>();
+
+    // 1. Fetch from 'stops' collection
+    try {
+      const stopsSnapshot = await db.collection('stops').get();
+      stopsSnapshot.docs.forEach(doc => {
+        const data = doc.data();
+        const name = (data.name || data.stopName || '').trim();
+        if (name) {
+          stopsMap.set(name.toLowerCase(), {
+            id: doc.id,
+            name,
+            ...data,
+          });
+        }
+      });
+    } catch (err) {
+      console.warn('Warning fetching stops collection:', err);
+    }
+
+    // 2. Fetch all stops from 'buses' collection to ensure complete coverage
+    try {
+      const busesSnapshot = await db.collection('buses').get();
+      busesSnapshot.docs.forEach(doc => {
+        const bus = doc.data();
+        const collectStop = (stopName: any) => {
+          if (typeof stopName === 'string') {
+            const clean = stopName.trim();
+            if (clean && !stopsMap.has(clean.toLowerCase())) {
+              stopsMap.set(clean.toLowerCase(), {
+                id: `bus-stop-${clean.toLowerCase().replace(/\s+/g, '-')}`,
+                name: clean,
+                district: '',
+                location: { lat: 0, lng: 0 },
+              });
+            }
+          }
+        };
+
+        if (Array.isArray(bus.route)) {
+          bus.route.forEach(collectStop);
+        }
+        if (Array.isArray(bus.timings)) {
+          bus.timings.forEach((t: any) => {
+            collectStop(t.stopName || t.stop);
+          });
+        }
+        collectStop(bus.from);
+        collectStop(bus.to);
+        collectStop(bus.via);
+      });
+    } catch (err) {
+      console.warn('Warning fetching buses collection for stops:', err);
+    }
+
+    const stops = Array.from(stopsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
     res.json({
       success: true,
       data: stops,
+      count: stops.length,
     });
   } catch (error) {
     console.error('Error fetching stops:', error);

@@ -8,6 +8,7 @@ interface AutocompleteInputProps {
   value: string;
   onChange: (value: string) => void;
   suggestions: string[];
+  isLoading?: boolean;
   icon?: React.ReactNode;
   id?: string;
 }
@@ -17,7 +18,8 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   placeholder,
   value,
   onChange,
-  suggestions,
+  suggestions = [],
+  isLoading = false,
   icon,
   id: idProp,
 }) => {
@@ -31,7 +33,11 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
 
   // Build the Fuse search index once when suggestions list changes, not per-keystroke
   const fuse = useMemo(() => {
-    return new Fuse(suggestions, {
+    const cleanList = (suggestions || [])
+      .map(s => (typeof s === 'string' ? s : (s as any)?.name || (s as any)?.stopName || ''))
+      .filter(Boolean);
+
+    return new Fuse(cleanList, {
       threshold: 0.4,       // 0 = exact match only, 1 = match anything; 0.4 handles typos
       distance: 100,
       minMatchCharLength: 2,
@@ -131,7 +137,16 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
           role="listbox"
           className="absolute z-30 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-transit-md max-h-52 overflow-y-auto animate-fade-in"
         >
-          {filteredSuggestions.length > 0 ? (
+          {isLoading ? (
+            <li
+              role="status"
+              aria-live="polite"
+              className="px-3 py-2.5 text-xs text-neutral-400 text-center select-none flex items-center justify-center gap-1.5"
+            >
+              <div className="w-3 h-3 border border-navy-800/20 border-t-navy-800 rounded-full animate-spin" />
+              Loading stops…
+            </li>
+          ) : filteredSuggestions.length > 0 ? (
             filteredSuggestions.map((suggestion, index) => (
               <li
                 key={index}
