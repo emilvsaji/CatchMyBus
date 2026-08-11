@@ -12,13 +12,6 @@ interface AutocompleteInputProps {
   id?: string;
 }
 
-const normalizeStop = (s: string) =>
-  (s || '')
-    .toLowerCase()
-    .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
 const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   label,
   placeholder,
@@ -36,12 +29,13 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  // Initialize Fuse instance for fuzzy searching
+  // Build the Fuse search index once when suggestions list changes, not per-keystroke
   const fuse = useMemo(() => {
     return new Fuse(suggestions, {
-      threshold: 0.45, // Tolerant matching for typos (e.g. eratpeta -> Erattupetta)
+      threshold: 0.4,       // 0 = exact match only, 1 = match anything; 0.4 handles typos
       distance: 100,
       minMatchCharLength: 2,
+      ignoreLocation: true, // Don't penalize matches based on position in string
     });
   }, [suggestions]);
 
@@ -61,35 +55,14 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     if (trimmed.length < 2) {
       setShowSuggestions(false);
       setFilteredSuggestions([]);
+      setActiveIndex(-1);
       return;
     }
 
-    const normInput = normalizeStop(trimmed);
-
-    // 1. Exact prefix matches first (matching start of string or start of any word)
-    const prefixMatches = suggestions.filter(s => {
-      const normS = normalizeStop(s);
-      return normS.startsWith(normInput) || normS.split(' ').some(w => w.startsWith(normInput));
-    });
-
-    // 2. Substring matches that aren't already prefix matches
-    const substringMatches = suggestions.filter(s => {
-      const normS = normalizeStop(s);
-      return !prefixMatches.includes(s) && normS.includes(normInput);
-    });
-
-    // 3. Fuzzy matches via Fuse.js for typos/transpositions
-    const seen = new Set<string>([...prefixMatches, ...substringMatches]);
-    const fuzzyResults = fuse
-      .search(trimmed)
-      .map(r => r.item)
-      .filter(item => !seen.has(item));
-
-    // Combine: prefix -> substring -> fuzzy, capped at 6
-    const combined = [...prefixMatches, ...substringMatches, ...fuzzyResults].slice(0, 6);
-
-    setFilteredSuggestions(combined);
-    setShowSuggestions(combined.length > 0);
+    // Query Fuse.js index and slice top 6 relevance-ranked results
+    const results = fuse.search(trimmed).slice(0, 6).map(r => r.item);
+    setFilteredSuggestions(results);
+    setShowSuggestions(true);
     setActiveIndex(-1);
   };
 
@@ -108,11 +81,15 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     if (!showSuggestions) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveIndex(i => Math.min(i + 1, filteredSuggestions.length - 1));
+      if (filteredSuggestions.length > 0) {
+        setActiveIndex(i => Math.min(i + 1, filteredSuggestions.length - 1));
+      }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveIndex(i => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      if (filteredSuggestions.length > 0) {
+        setActiveIndex(i => Math.max(i - 1, 0));
+      }
+    } else if (e.key === 'Enter' && activeIndex >= 0 && activeIndex < filteredSuggestions.length) {
       e.preventDefault();
       handleSelect(filteredSuggestions[activeIndex]);
     } else if (e.key === 'Escape') {
@@ -132,6 +109,7 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
       </label>
       <input
         id={inputId}
+        role="combobox"
         type="text"
         className="input-field text-neutral-800 placeholder:text-neutral-400"
         placeholder={placeholder}
@@ -146,31 +124,41 @@ const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         aria-activedescendant={activeIndex >= 0 ? `${inputId}-opt-${activeIndex}` : undefined}
       />
 
-      {showSuggestions && filteredSuggestions.length > 0 && (
+      {showSuggestions && (
         <ul
           ref={listRef}
           id={`${inputId}-list`}
           role="listbox"
           className="absolute z-30 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-transit-md max-h-52 overflow-y-auto animate-fade-in"
         >
-          {filteredSuggestions.map((suggestion, index) => (
+          {filteredSuggestions.length > 0 ? (
+            filteredSuggestions.map((suggestion, index) => (
+              <li
+                key={index}
+                id={`${inputId}-opt-${index}`}
+                role="option"
+                aria-selected={index === activeIndex}
+                className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer transition-colors duration-100 ${
+                  index === activeIndex
+                    ? 'bg-navy-800 text-white'
+                    : 'text-neutral-700 hover:bg-neutral-50'
+                }`}
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => handleSelect(suggestion)}
+              >
+                <Search className="w-3 h-3 flex-shrink-0 opacity-40" />
+                {suggestion}
+              </li>
+            ))
+          ) : (
             <li
-              key={index}
-              id={`${inputId}-opt-${index}`}
-              role="option"
-              aria-selected={index === activeIndex}
-              className={`flex items-center gap-2 px-3 py-2.5 text-sm cursor-pointer transition-colors duration-100 ${
-                index === activeIndex
-                  ? 'bg-navy-800 text-white'
-                  : 'text-neutral-700 hover:bg-neutral-50'
-              }`}
-              onMouseDown={e => e.preventDefault()}
-              onClick={() => handleSelect(suggestion)}
+              role="status"
+              aria-live="polite"
+              className="px-3 py-2.5 text-xs text-neutral-400 text-center select-none"
             >
-              <Search className="w-3 h-3 flex-shrink-0 opacity-40" />
-              {suggestion}
+              No matching stops — check spelling
             </li>
-          ))}
+          )}
         </ul>
       )}
     </div>

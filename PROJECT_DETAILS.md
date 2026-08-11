@@ -25,12 +25,14 @@
 ## 🎯 Project Overview & Mission
 
 ### Purpose
-CatchMyBus provides daily commuters, students, working professionals, and travelers in Kerala with reliable, real-time bus schedules, departure and arrival timings, intermediate stop breakdowns, automated fare calculation, and interactive route mapping.
+CatchMyBus provides daily commuters, students, working professionals, and travelers in Kerala with reliable bus schedules, departure and arrival timings, intermediate stop breakdowns, automated fare calculation, and interactive route mapping.
 
 ### Key Value Pillars
 - **Transit-Board Interface:** High-density, professional transit board presentation focusing on readability, uppercase bus names, tabular alignment, and clean visual hierarchy.
-- **Mobile-First Experience:** Built with a strict 375px+ responsive grid, touch-friendly hit areas ($\ge 44\text{px}$), sticky filter bars, and minimal scrolling friction.
-- **Accurate Timing & Fare Engine:** Smart multi-criteria matching algorithm with exact/word-boundary stop matching, automated fare approximation, and distance calculations.
+- **Typo-Tolerant Autocomplete (Fuse.js):** Client-side fuzzy stop search matching Malayalam place names even with spelling variations or transpositions (e.g. `"eratpeta"` $\rightarrow$ `"Erattupetta"`).
+- **Mobile-First Experience:** Built with a strict 375px+ responsive grid, touch-friendly hit areas ($\ge 44\text{px}$), sticky filter bars, and auto-scrolling to search results.
+- **Accurate Timing & Fare Engine:** Smart multi-criteria matching algorithm with exact/word-boundary stop matching, directional filtering, automated fare approximation, and distance calculations.
+- **Community-Powered Crowdsourcing:** Commuter bus suggestion portal with an administrative review and one-click publishing workflow.
 
 ---
 
@@ -73,11 +75,11 @@ The application uses a **professional transit design system** anchored in deep t
 | `neutral-100` | `#ECEEF2` | `rgb(236, 238, 242)` | Hairline dividers, accordion borders |
 | `neutral-200` | `#E2E6EA` | `rgb(226, 230, 234)` | **Card Borders**, input borders, dropdown borders |
 | `neutral-300` | `#C8CDD5` | `rgb(200, 205, 213)` | Disabled icons, placeholder stop dots |
-| `neutral-400` | `#9AA3AF` | `rgb(154, 163, 175)` | Sub-labels, distance text, uppercase labels |
-| `neutral-500` | `#6B7585` | `rgb(107, 117, 133)` | Secondary body copy, stop names |
+| `neutral-400` | `#9AA3AF` | `rgb(154, 163, 175)` | Sub-labels, distance text, uppercase labels, input placeholders |
+| `neutral-500` | `#6B7585` | `rgb(107, 117, 133)` | Secondary body copy, stop names, intermediate timeline times |
 | `neutral-600` | `#4A5568` | `rgb(74, 85, 104)` | Intermediate text, filter labels |
 | `neutral-700` | `#3A4455` | `rgb(58, 68, 85)` | High-contrast secondary headings |
-| `neutral-800` | `#1E2530` | `rgb(30, 37, 48)` | **Primary Text (Slate-Gray)**, card titles, fares |
+| `neutral-800` | `#1E2530` | `rgb(30, 37, 48)` | **Primary Text (Slate-Gray)**, card titles, fares, entered inputs |
 | `neutral-900` | `#111620` | `rgb(17, 22, 32)` | Maximum contrast titles |
 
 #### **Muted Bus-Type Badge Palette (Desaturated Letterpress Style)**
@@ -89,55 +91,6 @@ The application uses a **professional transit design system** anchored in deep t
 | **Super Fast** | `#FBE9E9` | `#8A2E2E` | `.badge-superfast` |
 | **Ordinary** | `#F0F1F3` | `#4A5568` | `.badge-ordinary` |
 
-#### **Status & Pin Markers**
-| Purpose | Hex Code | Visual Description |
-|---|---|---|
-| **Origin Stop Pin** | `#1B7F4C` | Deep green SVG pin & route progress start dot |
-| **Destination Stop Pin** | `#B3261E` | Deep red SVG pin & route progress end dot |
-| **User Stop Tag Pill** | `#F5A623` | Amber-400/20 background, amber-800 text, border chip for `Your From` & `Your To` |
-| **Partial Match Notice** | `#F5A623` | Amber-400 2px left border on `#F5A623`/10 background |
-| **Live Status Dot** | `#F5A623` | 6px amber dot (`.live-dot`) |
-
----
-
-### 2. Typography & Tabular Numerals
-- **Primary Font Family:** `'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`
-- **Monospace Font Family:** `'JetBrains Mono', 'Fira Code', 'Consolas', monospace` (used for bus registration numbers)
-- **Bus Name Styling:** Rendered in full uppercase with `tracking-wide` (`text-transform: uppercase`) for a transit board appearance.
-- **Tabular Figures:** `font-variant-numeric: tabular-nums;` is applied across all timing, fare, distance, and duration data.
-
----
-
-### 3. Keyframe Animations & Micro-Interactions
-Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-preference)`:
-```css
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-```
-
-### 4. Custom Reusable Utility Classes (`index.css`)
-- `.btn-amber`: Signal amber primary CTA (`bg-amber-400 text-navy-800 font-semibold px-5 py-2.5 rounded-lg hover:bg-amber-300 min-h-[44px]`)
-- `.btn-navy`: Navy secondary button (`bg-navy-800 text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-navy-700 min-h-[44px]`)
-- `.btn-ghost`: Outline ghost button (`border border-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-100 min-h-[44px]`)
-- `.transit-card`: Border-based card container (`bg-white rounded-lg border border-neutral-200 shadow-transit`)
-- `.transit-row`: Transit-board result item (`bg-white border border-neutral-200 hover:border-neutral-300 shadow-transit`)
-- `.input-field`: Off-white input with navy focus ring (`bg-neutral-50 border border-neutral-200 focus:border-navy-800 focus:ring-2 focus:ring-navy-800/15 min-h-[44px]`)
-- `.route-progress`: Segmented flat route line with origin dot, dashed line, via stop label, and destination dot
-- `.sticky-filter-bar`: Sticky sub-navbar (`sticky top-[56px] z-30 bg-navy-800 border-b border-navy-900`)
-- `.map-muted`: Map tile filter (`filter: saturate(0.82) brightness(1.03)`)
-
 ---
 
 ## 🛠️ Technology Stack
@@ -148,8 +101,9 @@ Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-prefe
 | **React** | `18.2.0` | UI Component Framework |
 | **TypeScript** | `5.2.2` | Static type safety and data modeling |
 | **Vite** | `5.4.21` | High-speed frontend bundler & dev server |
+| **Fuse.js** | `7.5.0` | Client-side typo-tolerant fuzzy stop autocomplete |
 | **Tailwind CSS** | `3.3.6` | Utility-first styling with custom transit design tokens |
-| **React Router DOM**| `6.20.1` | Client-side routing (`/`, `/search`, `/admin`, `/debug`) |
+| **React Router DOM**| `6.20.1` | Client-side routing (`/`, `/search`, `/admin`, `/user-dashboard`, `/debug`) |
 | **Leaflet & React Leaflet** | `1.9.4` / `4.2.1` | Interactive map tiles with custom SVG markers & polylines |
 | **Lucide React** | `0.294.0` | Clean, lightweight transit iconography |
 | **React Hot Toast** | `2.4.1` | User notification toasts for bookmarks, auth, and feedback |
@@ -170,15 +124,6 @@ Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-prefe
 | **Express Validator** | `7.0.1` | Request body validation |
 | **Nodemon & ts-node** | `3.0.2` / `10.9.2` | Development hot-reload |
 
-### Cloud Database & Hosting
-| Service | Role |
-|---|---|
-| **Google Cloud Firestore** | NoSQL document database (`buses`, `stops`, `favorites`, `feedback`) |
-| **Firebase Authentication** | User credentials & administrative role checking |
-| **Render** | Node.js web service production deployment (`render.yaml`) |
-| **Vercel** | SPA frontend hosting with edge rewrite rules (`vercel.json`) |
-| **OpenStreetMap Nominatim** | Real-time geocoding and reverse geocoding API |
-
 ---
 
 ## 🏛️ System Architecture & Data Flow
@@ -186,10 +131,10 @@ Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-prefe
 ```
 +-----------------------------------------------------------------------------------+
 |                                  USER BROWSER                                     |
-|  [HomePage / SearchResults / AdminPage / DebugPage]                               |
+|  [HomePage / SearchResults / AdminPage / UserDashboard / DebugPage]               |
 |                                                                                   |
-|  • Transit-Board Cards           • Segmented Route Progress   • Autocomplete      |
-|  • React Leaflet (Custom Pins)   • Tabular-Nums Formatting    • Firebase Auth     |
+|  • Fuse.js Fuzzy Autocomplete    • Auto-Scroll to Results     • Transit-Board Cards|
+|  • Scoped Dep/Arr Timelines      • React Leaflet Maps         • Firebase Auth     |
 +----------------------------------------+------------------------------------------+
                                          |
                                          | HTTP / JSON (REST)
@@ -202,9 +147,10 @@ Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-prefe
 |  • Geocoding / Haversine Engine (OpenStreetMap Nominatim integration)             |
 |                                                                                   |
 |  Routes:                                                                          |
-|  ├── /api/buses/search        (Multi-criteria route & timing matching)            |
+|  ├── /api/buses/search        (Multi-criteria route & directional stop matching)  |
 |  ├── /api/buses/stops         (Autocomplete & spatial stops retrieval)            |
-|  ├── /api/admin/buses         (CRUD operations for bus routes & timings)          |
+|  ├── /api/bus-requests        (Community suggestions submission & admin review)   |
+|  ├── /api/admin/buses         (CRUD operations for bus routes & untimed buses)    |
 |  ├── /api/admin/stops         (Bus stop location registration)                    |
 |  ├── /api/favorites           (Inline route bookmarking endpoint)                 |
 |  ├── /api/feedback            (Commuter reporting & admin review)                 |
@@ -217,10 +163,11 @@ Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-prefe
 |                            GOOGLE CLOUD FIRESTORE                                 |
 |                                                                                   |
 |  Collections:                                                                     |
-|  ├── `buses`       (Routes, intermediate stops, arrival/departure schedules)      |
-|  ├── `stops`       (Geocoded stop names, districts, latitude/longitude coords)    |
-|  ├── `favorites`   (User saved routes)                                            |
-|  └── `feedback`    (Reports, status, user notes)                                  |
+|  ├── `buses`          (Routes, intermediate stops, schedules, untimed routes)     |
+|  ├── `stops`          (Geocoded stop names, districts, latitude/longitude coords) |
+|  ├── `busRequests`    (Community submissions: pending, approved, rejected)        |
+|  ├── `favorites`      (User saved routes)                                         |
+|  └── `feedback`       (Reports, status, user notes)                               |
 +-----------------------------------------------------------------------------------+
 ```
 
@@ -228,134 +175,63 @@ Animations are subtle and wrapped with `@media (prefers-reduced-motion: no-prefe
 
 ## 💻 Frontend Architecture & Component Reference
 
-### 1. Directory Structure
-```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Header.tsx           # 56px sticky navy navbar with logo + auth avatar dropdown
-│   │   │   └── Footer.tsx           # Compact navy footer with brand, contact & copyright
-│   │   ├── AutocompleteInput.tsx    # Accessible stop input with keyboard navigation (↑↓ Enter Esc)
-│   │   ├── BusCard.tsx              # Transit-board row card with flat segmented route & stacked DEPARTS/ARRIVES
-│   │   ├── LoginModal.tsx           # Firebase Auth popup styled with btn-amber
-│   │   ├── ProtectedRoute.tsx       # Route guard redirecting non-admins
-│   │   └── RouteMap.tsx             # React Leaflet map with custom SVG pins & muted tiles
-│   ├── config/
-│   │   ├── api.ts                   # Axios instance with VITE_API_URL baseURL
-│   │   └── firebase.ts              # Firebase client app initialization
-│   ├── contexts/
-│   │   └── AuthContext.tsx          # Auth provider tracking currentUser & isAdmin status
-│   ├── pages/
-│   │   ├── AdminPage.tsx            # Bus & Stop CRUD management with real-time uppercase bus names
-│   │   ├── DebugPage.tsx            # Diagnostic utility for API connectivity
-│   │   ├── HomePage.tsx             # Navy hero, overlapping search card, desktop feature strip, inline results
-│   │   └── SearchResults.tsx        # Sticky filter bar, responsive 1-col to 2-col results grid, map toggle
-│   ├── types/
-│   │   └── index.ts                 # Central TypeScript interfaces
-│   ├── App.tsx                      # Clean React Router config
-│   ├── main.tsx                     # React DOM root render with Toaster
-│   └── index.css                    # Design tokens, component classes, tabular-nums utilities
-├── public/                          # Static assets
-├── index.html                       # HTML5 entry with Inter font
-├── tailwind.config.js               # Transit navy + signal amber design tokens
-├── tsconfig.json                    # TypeScript compiler configuration
-├── vercel.json                      # Vercel SPA routing rewrite rules
-└── vite.config.ts                   # Vite configuration
-```
+### 1. Key Component Features
 
-### 2. Component Highlights
+#### `AutocompleteInput.tsx` (Fuzzy Autocomplete)
+- **Single Fuse.js Indexing**: Builds a `Fuse` search instance once using `useMemo` keyed on the `suggestions` array.
+- **Typo Tolerance**: Configured with `threshold: 0.4`, `distance: 100`, `minMatchCharLength: 2`, `ignoreLocation: true`.
+- **Early Trigger**: Activates suggestions at $\ge 2$ characters; returns top 6 relevance-ranked matches.
+- **Empty State Fallback**: When $\ge 2$ characters yield zero matches, displays a non-selectable `"No matching stops — check spelling"` hint item.
+- **Accessibility & Keyboard Nav**: Full WAI-ARIA combobox support (`role="combobox"`, `aria-autocomplete="list"`, `aria-expanded`, `aria-activedescendant`) and keyboard controls (ArrowDown, ArrowUp, Enter, Escape).
 
-#### `Header.tsx`
-- **Slim Sticky Bar:** 56px height (`h-14`), deep navy `#0B2545` background.
-- **Clean Logo:** Amber bus icon block + bold white "CatchMyBus" wordmark.
-- **Auth Controls:** Amber "Log in" button when logged out; avatar circle with dropdown when logged in.
-- **Admin Access:** "Admin panel" link surfaces inside the avatar dropdown menu for admins (above "Sign out").
+#### `BusCard.tsx` (Transit Board Card & Timeline)
+- **Scoped DEPARTS / ARRIVES Labels**: The intermediate stops timeline strictly scopes `"Dep"` / `"Your From"` to the searched origin and `"Arr"` / `"Your To"` to the searched destination.
+- **Intermediate Stops**: Stops between origin and destination render only their scheduled time in secondary text (`text-neutral-500`) without confusing `"Arr"`/`"Dep"` labels.
+- **Untimed Bus Handling**: When a bus has no scheduled timings (`noTimings: true`), renders a `"Timings not yet available"` block with subtitle `"Route registered • Exact schedule to be announced"`.
+- **Stacked Timing Layout**: 3-column block with DEPARTS, trip duration connector, and ARRIVES.
 
-#### `BusCard.tsx`
-- **Transit-Board Row Layout:** Horizontal format with `shadow-transit` border elevation.
-- **Uppercase Bus Names:** Rendered in full uppercase with `tracking-wide` (`text-transform: uppercase`).
-- **Stacked Timing Display:** 3-column block with small uppercase labels:
-  - *DEPARTS:* Departure time in `tabular-nums` + stop name.
-  - *DURATION CONNECTOR:* Thin vertical line + trip duration (`Xh Ym` / `Ym` / `↓`).
-  - *ARRIVES:* Arrival time in `tabular-nums` + stop name.
-- **Inline Bookmark:** Top-right bookmark icon posting to `/api/favorites`.
-- **Intermediate Stop Timeline:** Vertical timeline with exact/word-boundary stop matching (`isStopMatch`). Displays amber chip tags: `Your From`, `Your To`, `Start`, `End`.
+#### `HomePage.tsx` & `SearchResults.tsx` (Search Flow & Auto-Scroll)
+- **Clear Instructional Placeholders**: `"Enter starting stop"`, `"Enter destination stop"`, `"Enter via stop (optional)"`.
+- **Auto-Scroll on Search**: Attaches a `resultsRef` and calls `scrollToResults()` after search completion, with fallback for `prefers-reduced-motion`.
 
-#### `AdminPage.tsx`
-- **Add Bus Action:** Action button `+ Add Bus` beside the "Manage Buses" section header and top tab row.
-- **Real-Time Uppercase:** Bus name fields automatically convert typed text to uppercase in real time (`e.target.value.toUpperCase()`).
+#### `AdminPage.tsx` (Corridor Importer & Request Pipeline)
+- **"Import stops from existing route"**: Checks existing buses on the same corridor using `isStopMatch`. If 1 bus matches, populates the stop sequence with empty time inputs; if multiple buses match, displays an interactive Route Picker modal.
+- **Untimed Bus Creation**: Admins can register routes with empty timings (`timings: []`), requiring only $\ge 2$ route stops.
+- **Community Requests Approval**: Review commuter suggestions with expandable stop timelines, one-click live publishing, and structured rejection reasons.
 
-#### `LoginModal.tsx`
-- **Clean Modal Shell:** Styled with `btn-amber` primary CTA button.
-- **Removed Hardcoded Credentials:** Removed static admin email/password hint box.
-
-#### `HomePage.tsx` & `SearchResults.tsx`
-- **Desktop-Only Feature Strip:** 3-card feature strip hidden on mobile (`hidden sm:block`) for mobile search focus.
-#### `UserDashboard.tsx`
-- **Commuter Profile Details:** Collects full name, phone number, district, and home town with persistent `localStorage` saving.
-- **Suggest a Bus Flow:** "Add Bus" section defaulting to **`Private`** bus type with real-time uppercase bus names, smart paste stops parser, and persistent confirmation message.
-- **Review Queue Metadata:** Automatically forwards commuter name and phone number alongside the suggested bus data for admin contact.
-
-- **Refined Bottom Spacing:** Reduced bottom padding (`pb-8`) and grid margins (`mb-6`) above the footer.
+#### `UserDashboard.tsx` (Commuter Dashboard)
+- **Commuter Profile**: Persistent storage for name, phone, district, and hometown.
+- **Suggest a Bus**: Community route contribution form with mandatory stop timings validation and smart comma/newline stop parser.
 
 ---
 
 ## ⚡ Backend Architecture & API Specification
 
-### 1. Directory Structure
-```
-backend/
-├── src/
-│   ├── config/
-│   │   └── firebase.ts              # Firebase Admin SDK initialization
-│   ├── routes/
-│   │   ├── adminRoutes.ts           # Admin bus/stop CRUD endpoints
-│   │   ├── busRoutes.ts             # Bus search (exact/word-boundary stop index matching)
-│   │   ├── favoriteRoutes.ts        # User favorite routes CRUD
-│   │   └── feedbackRoutes.ts        # Feedback submission & status updates
-│   ├── utils/
-│   │   ├── googleMaps.ts            # OpenStreetMap Nominatim geocoding & Haversine formula
-│   │   └── helpers.ts               # Fare & travel time estimation formulas
-│   └── server.ts                    # Express app entry, CORS, logger & health check
-├── dist/                            # Transpiled JavaScript production output
-├── package.json                     # Backend dependencies & build scripts
-└── tsconfig.json                    # Backend TypeScript compiler settings
-```
+### Complete REST API Specification
 
-### 2. Complete REST API Specification
-
-#### **Bus Routes (`/api/buses`)**
+#### **Bus & Search Routes (`/api/buses`)**
 | Method | Endpoint | Query / Body Parameters | Response Format | Description |
 |---|---|---|---|---|
-| `GET` | `/api/buses/search` | `from` (string, req)<br>`to` (string, req)<br>`type` (string, opt)<br>`time` (string, opt)<br>`showAll` (boolean, opt) | `{ success: true, count: number, data: BusResult[] }` | Search engine with word-boundary stop matching, distance, fare, and timing calculation. |
-| `GET` | `/api/buses/stops` | None | `{ success: true, count: number, data: BusStop[] }` | Returns all registered bus stops for autocomplete. |
-| `GET` | `/api/buses/stops/nearby` | `lat` (number)<br>`lng` (number)<br>`radius` (number) | `{ success: true, count: number, data: BusStop[] }` | Spatial lookup of nearby bus stops within radius using Haversine calculation. |
+| `GET` | `/api/buses/search` | `from` (string, req)<br>`to` (string, req)<br>`type` (string, opt)<br>`time` (string, opt)<br>`showAll` (boolean, opt) | `{ success: true, count: number, data: BusResult[] }` | Search engine with word-boundary stop matching, distance, fare, timing calculation, and untimed route support. |
+| `GET` | `/api/buses/stops` | None | `{ success: true, count: number, data: BusStop[] }` | Returns all registered bus stops for client-side Fuse.js indexing. |
+| `GET` | `/api/buses/stops/nearby` | `lat` (number)<br>`lng` (number)<br>`radius` (number) | `{ success: true, count: number, data: BusStop[] }` | Spatial lookup of nearby stops within radius using Haversine calculation. |
+
+#### **Community Bus Requests (`/api/bus-requests`)**
+| Method | Endpoint | Payload / Params | Description |
+|---|---|---|---|
+| `POST` | `/api/bus-requests` | `{ busName, busNumber, from, via, to, type, route, timings, submittedBy, submittedByEmail, submittedByName, submittedByPhone }` | Commuter submission of missing bus schedules (`status: 'pending'`). |
+| `GET` | `/api/bus-requests` | `status` (query, opt, defaults to `'pending'`) | Retrieves community submissions for admin review. |
+| `PUT` | `/api/bus-requests/:id/approve` | `{ adminEmail: string }` | Approves request: creates live record in `buses` collection and sets request status to `'approved'`. |
+| `PUT` | `/api/bus-requests/:id/reject` | `{ rejectionReason: string, adminEmail: string }` | Rejects request with reason. |
 
 #### **Admin Management Routes (`/api/admin`)**
 | Method | Endpoint | Payload / Params | Description |
 |---|---|---|---|
 | `GET` | `/api/admin/buses` | None | Retrieves all bus records for admin overview. |
-| `POST` | `/api/admin/buses` | `{ busName, from, via, to, type, route: string[], timings: BusTiming[] }` | Registers a new bus route (auto-uppercased name). |
+| `POST` | `/api/admin/buses` | `{ busName, from, via, to, type, route: string[], timings?: BusTiming[] }` | Registers a new bus (timings optional, $\ge 2$ route stops required). |
 | `PUT` | `/api/admin/buses/:id` | Partial bus object payload | Updates existing bus information. |
 | `DELETE` | `/api/admin/buses/:id` | `:id` path parameter | Permanently deletes a bus from Firestore. |
 | `POST` | `/api/admin/stops` | `{ name, district, location: { lat, lng } }` | Adds a new official bus stop. |
-| `GET` | `/api/admin/debug/buses` | `limit` (number, opt) | Diagnostic inspection of raw Firestore documents. |
-
-#### **Community Bus Suggestions Routes (`/api/bus-requests`)**
-| Method | Endpoint | Payload / Params | Description |
-|---|---|---|---|
-| `POST` | `/api/bus-requests` | `{ busName, busNumber, from, via, to, type, route, timings, submittedBy, submittedByEmail }` | Commuter submission of missing bus schedules (status initialized to `'pending'`). |
-| `GET` | `/api/bus-requests` | `status` (query, opt, defaults to `'pending'`) | Retrieves pending or filtered community submissions for admin review. |
-| `PUT` | `/api/bus-requests/:id/approve` | `{ adminEmail: string }` | Admin approval: copies request data into live `buses` collection and sets request status to `'approved'`. |
-| `PUT` | `/api/bus-requests/:id/reject` | `{ rejectionReason: string, adminEmail: string }` | Admin rejection: sets status to `'rejected'` without modifying the live `buses` collection. |
-
-#### **User Favorites Routes (`/api/favorites`)**
-| Method | Endpoint | Payload / Params | Description |
-|---|---|---|---|
-| `GET` | `/api/favorites` | None | Retrieves saved routes for the user. |
-| `POST` | `/api/favorites` | `{ fromStop: string, toStop: string }` | Saves a route to user's favorites (triggered via inline card bookmark). |
-| `DELETE` | `/api/favorites/:id` | `:id` path parameter | Removes a saved route. |
 
 ---
 
@@ -383,9 +259,9 @@ interface Bus {
   from?: string;              // Starting terminus
   to?: string;                // Ending terminus
   via?: string;               // Optional intermediate landmark string
-  route: string[];            // Array of ordered stop names
-  timings: BusTiming[];       // Array of timing objects
-  fare?: number;              // Pre-calculated base fare (optional)
+  route: string[];            // Array of ordered stop names (>= 2 required)
+  timings: BusTiming[];       // Array of timing objects (can be [] for untimed buses)
+  fare?: number;              // Base fare (optional)
   createdAt: Date;
   approvedFromRequestId?: string; // Reference to community suggestion if approved
 }
@@ -393,7 +269,7 @@ interface Bus {
 // 3. Community Bus Request Document (`busRequests` collection)
 interface BusRequest {
   id: string;
-  busName: string;            // Auto-uppercased bus title
+  busName: string;            // Uppercased bus title
   busNumber?: string;         // Vehicle registration
   type: 'KSRTC' | 'Private' | 'Fast' | 'Super Fast' | 'Ordinary';
   from?: string;
@@ -403,20 +279,14 @@ interface BusRequest {
   timings: Array<{ stopName: string; arrivalTime: string; departureTime: string }>;
   submittedBy: string;        // Submitter Firebase UID
   submittedByEmail?: string;  // Submitter email address
+  submittedByName?: string;   // Submitter full name
+  submittedByPhone?: string;  // Submitter contact number
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
   reviewedAt?: Date;
-  reviewedBy?: string;        // Reviewing admin email/UID
-  rejectionReason?: string;   // Optional explanation if rejected
+  reviewedBy?: string;        // Reviewing admin
+  rejectionReason?: string;   // Reason if rejected
   approvedBusId?: string;     // Resulting bus ID in live 'buses' collection
-}
-
-interface BusTiming {
-  stopId?: string;
-  stopName: string;           // Name of the stop
-  arrivalTime: string;        // e.g. "06:00 AM" or "06:00"
-  departureTime: string;      // e.g. "06:15 AM" or "06:15"
-  dayOfWeek?: string[];       // e.g. ["Monday", "Tuesday", ...]
 }
 ```
 
@@ -424,7 +294,7 @@ interface BusTiming {
 
 ## 🧮 Algorithms & Calculation Logic
 
-### 1. Stop Matching Engine (`isStopMatch` & `matchStopIndex`)
+### 1. Stop Normalization & Matching Engine
 Prevents false-positive substring matches (e.g. searching "Pala" will not match "Panackapalam"):
 ```typescript
 const normalizeStop = (s: string) =>
@@ -454,5 +324,41 @@ const isStopMatch = (stopCandidate: string, targetQuery: string): boolean => {
 };
 ```
 
+### 2. Client-Side Fuse.js Fuzzy Matching
+```typescript
+const fuse = useMemo(() => new Fuse(suggestions, {
+  threshold: 0.4,       // 0 = exact match, 1 = match anything; 0.4 handles typos
+  distance: 100,
+  minMatchCharLength: 2,
+  ignoreLocation: true, // Don't penalize matches based on position in string
+}), [suggestions]);
+```
+
 ---
+
+## ⚙️ Environment Variables Reference
+
+### Frontend (`frontend/.env`)
+```env
+VITE_API_URL=http://localhost:5000
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### Backend (`backend/.env`)
+```env
+PORT=5000
+NODE_ENV=development
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+FRONTEND_URL=http://localhost:5173
+```
+
+---
+
 *Built with ❤️ for commuters across Kerala.*
