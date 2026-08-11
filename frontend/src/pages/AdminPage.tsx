@@ -41,7 +41,7 @@ const AdminPage = () => {
     from: '',
     via: '',
     to: '',
-    type: 'KSRTC',
+    type: 'Private',
   });
   const [stopTimings, setStopTimings] = useState<StopTiming[]>([
     { stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }
@@ -190,7 +190,7 @@ const AdminPage = () => {
       await api.put(`/api/admin/buses/${editingBus.id}`, busData);
       toast.success('Bus updated successfully!');
       setEditingBus(null);
-      setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'KSRTC' });
+      setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'Private' });
       setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
       setPasteStopsText('');
       fetchAllBuses();
@@ -248,7 +248,7 @@ const AdminPage = () => {
 
   const handleCancelEdit = () => {
     setEditingBus(null);
-    setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'KSRTC' });
+    setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'Private' });
     setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
     setPasteStopsText('');
   };
@@ -270,15 +270,14 @@ const AdminPage = () => {
     setStopTimings([...stopTimings, { stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
   };
 
-  const importPastedStops = (replace = true) => {
+  const importPastedStops = () => {
     if (!pasteStopsText || !pasteStopsText.trim()) return;
     // Split on commas, newlines, semicolons
     const parts = pasteStopsText.split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
     if (parts.length === 0) return;
 
     const newRows: StopTiming[] = parts.map(p => ({ stopName: p, times: [{ arrivalTime: '', period: 'AM' }] }));
-    if (replace) setStopTimings(newRows);
-    else setStopTimings([...stopTimings, ...newRows]);
+    setStopTimings(newRows);
     setPasteStopsText('');
   };
 
@@ -349,7 +348,7 @@ const AdminPage = () => {
       const response = await api.post('/api/admin/buses', busData);
       console.log('✅ Bus added successfully:', response.data);
       toast.success('Bus added successfully!');
-      setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'KSRTC' });
+      setBusForm({ busName: '', busNumber: '', from: '', via: '', to: '', type: 'Private' });
       setStopTimings([{ stopName: '', times: [{ arrivalTime: '', period: 'AM' }] }]);
       setPasteStopsText('');
     } catch (error: any) {
@@ -531,8 +530,8 @@ const AdminPage = () => {
                   onChange={(e) => setBusForm({ ...busForm, type: e.target.value })}
                   required
                 >
-                  <option value="KSRTC">KSRTC</option>
                   <option value="Private">Private</option>
+                  <option value="KSRTC">KSRTC</option>
                   <option value="Fast">Fast</option>
                   <option value="Super Fast">Super Fast</option>
                   <option value="Ordinary">Ordinary</option>
@@ -554,8 +553,7 @@ const AdminPage = () => {
                       placeholder="e.g., Pala, Pravithanam, Kollapally"
                       className="input-field flex-1"
                     />
-                    <button type="button" onClick={() => importPastedStops(true)} className="btn-primary px-3">Import</button>
-                    <button type="button" onClick={() => importPastedStops(false)} className="px-3 bg-gray-100 rounded-lg">Append</button>
+                    <button type="button" onClick={importPastedStops} className="btn-primary px-3">Add</button>
                   </div>
                 </div>
 
@@ -738,8 +736,8 @@ const AdminPage = () => {
                       onChange={(e) => setBusForm({ ...busForm, type: e.target.value })}
                       required
                     >
-                      <option value="KSRTC">KSRTC</option>
                       <option value="Private">Private</option>
+                      <option value="KSRTC">KSRTC</option>
                       <option value="Fast">Fast</option>
                       <option value="Super Fast">Super Fast</option>
                       <option value="Ordinary">Ordinary</option>
@@ -761,8 +759,7 @@ const AdminPage = () => {
                           placeholder="e.g., Pala, Pravithanam, Kollapally"
                           className="input-field flex-1"
                         />
-                        <button type="button" onClick={() => importPastedStops(true)} className="btn-primary px-3">Import</button>
-                        <button type="button" onClick={() => importPastedStops(false)} className="px-3 bg-gray-100 rounded-lg">Append</button>
+                        <button type="button" onClick={importPastedStops} className="btn-primary px-3">Add</button>
                       </div>
                     </div>
 

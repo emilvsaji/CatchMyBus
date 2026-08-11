@@ -137,7 +137,7 @@ const UserDashboard = () => {
     setStopTimings(updated);
   };
 
-  const importPastedStops = (replace = true) => {
+  const importPastedStops = () => {
     if (!pasteStopsText || !pasteStopsText.trim()) return;
     const parts = pasteStopsText.split(/[,;\n\r]+/).map(s => s.trim()).filter(Boolean);
     if (parts.length === 0) return;
@@ -147,8 +147,7 @@ const UserDashboard = () => {
       times: [{ arrivalTime: '', period: 'AM' }]
     }));
 
-    if (replace) setStopTimings(newRows);
-    else setStopTimings([...stopTimings, ...newRows]);
+    setStopTimings(newRows);
     setPasteStopsText('');
   };
 
@@ -583,22 +582,13 @@ const UserDashboard = () => {
                         placeholder="e.g., Pala, Pravithanam, Kollapally"
                         className="input-field flex-1 text-xs"
                       />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => importPastedStops(true)}
-                          className="btn-navy text-xs px-3 py-2 flex-1 sm:flex-none justify-center"
-                        >
-                          Import
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => importPastedStops(false)}
-                          className="btn-ghost text-xs px-3 py-2 flex-1 sm:flex-none justify-center"
-                        >
-                          Append
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={importPastedStops}
+                        className="btn-navy text-xs px-3 py-2 flex-1 sm:flex-none justify-center"
+                      >
+                        Add
+                      </button>
                     </div>
                   </div>
 
